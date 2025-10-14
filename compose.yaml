@@ -5,7 +5,7 @@ services:
     image: 'postgres:latest'
     container_name: postgres-ticket-app
     environment:
-      - 'POSTGRES_DB=ticketApp'
+      - 'POSTGRES_DB=ticket_app'
       - 'POSTGRES_PASSWORD=password'
       - 'POSTGRES_USER=user'
     ports:

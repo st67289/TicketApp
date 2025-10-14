@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Zahrneme základní Spring Boot konfiguraci pro logování na konzoli -->
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <!-- Definujeme si proměnnou s cestou k našemu SQL souboru -->
+    <!-- Soubor se bude jmenovat generated-ddl.log a bude ve složce build/sql -->
+    <property name="SQL_LOG_FILE" value="${BUILD_DIR:-build}/sql/generated-ddl.log"/>
+
+    <!-- Tento blok se aktivuje POUZE, pokud je aktivní profil "generate" -->
+    <springProfile name="generate">
+
+        <!-- Definujeme "appender", který umí zapisovat do souboru -->
+        <appender name="SQL_FILE" class="ch.qos.logback.core.FileAppender">
+            <file>${SQL_LOG_FILE}</file>
+            <encoder>
+                <!--
+                Klíčová část: Vzor %msg%n říká, aby se do souboru zapsala POUZE
+                samotná zpráva (SQL příkaz) a znak pro nový řádek.
+                Žádné datum, čas, ani úroveň logu. Jen čisté SQL.
+                -->
+                <pattern>%msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <!--
+        Řekneme logovacímu systému, aby VŠECHNY zprávy z loggeru "org.hibernate.SQL"
+        posílal do našeho souborového appenderu "SQL_FILE".
+        Additivity=false zajistí, že se SQL už nebude vypisovat duplicitně do konzole.
+        -->
+        <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+            <appender-ref ref="SQL_FILE"/>
+        </logger>
+
+    </springProfile>
+
+</configuration>
