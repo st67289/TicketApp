@@ -6,15 +6,12 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Repository
-public interface SeatRepository extends JpaRepository<Seat, UUID> {
-    List<Seat> findAllByHallId(UUID hallId);
+public interface SeatRepository extends JpaRepository<Seat, Long> {
 
-    Optional<Seat> findByHallIdAndSectionAndRowLabelAndSeatNumber(
-            UUID hallId, String section, String rowLabel, String seatNumber);
+    List<Seat> findAllByVenueIdAndIsActiveTrue(Long venueId);
 
-    boolean existsByHallIdAndSectionAndRowLabelAndSeatNumber(
-            UUID hallId, String section, String rowLabel, String seatNumber);
+    // pro konkretni misto
+    Optional<Seat> findByVenueIdAndSeatRowAndSeatNumber(Long venueId, String seatRow, String seatNumber);
 }

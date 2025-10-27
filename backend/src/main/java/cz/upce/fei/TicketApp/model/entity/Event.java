@@ -1,64 +1,43 @@
 package cz.upce.fei.TicketApp.model.entity;
+
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import java.time.OffsetDateTime;
-import java.util.UUID;
+import java.util.List;
 
-/**
- * EVENTS
- */
 @Entity
 @Table(name = "events")
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString
 public class Event {
+
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "event_id")
     @EqualsAndHashCode.Include
-    @Column(nullable = false)
-    private UUID id;
-
+    private Long id;
 
     @Column(nullable = false)
-    private String title;
-
+    private String name;
 
     @Column(columnDefinition = "text")
     private String description;
 
+    @Column(name = "start_time", nullable = false)
+    private OffsetDateTime startTime;
 
-    @Column(name = "hall_id", nullable = false)
-    private UUID hallId;
+    @Column(name = "end_time")
+    private OffsetDateTime endTime;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "venue_id", nullable = false)
+    @ToString.Exclude @EqualsAndHashCode.Exclude
+    private Venue venue;
 
-    @Column(name = "start_at", nullable = false)
-    private OffsetDateTime startAt;
+    // ** RELATIONS **
 
-
-    @Column(name = "end_at", nullable = false)
-    private OffsetDateTime endAt;
-
-
-    @Column(columnDefinition = "text")
-    private String seating;
-
-
-    @Column(name = "standing_capacity")
-    private Integer standingCapacity;
-
-
-    @Column(name = "standing_sold")
-    private Integer standingSold;
-
-
-    @Column(name = "standing_price_cents")
-    private Integer standingPriceCents;
-
-
-    @Column(length = 3, columnDefinition = "char(3)")
-    private String currency;
-
-
-    @Column(nullable = false)
-    private boolean published;
+    @OneToMany(mappedBy = "event", fetch = FetchType.LAZY)
+    @ToString.Exclude @EqualsAndHashCode.Exclude
+    private List<Ticket> tickets;
 }
