@@ -59,17 +59,18 @@ create table payments (
                           primary key (id)
 );
 
-create table reservations (
-                              id uuid not null,
-                              active boolean not null,
-                              created_at timestamp(6) with time zone not null,
-                              expires_at timestamp(6) with time zone,
-                              standing_qty integer,
-                              event_id uuid not null,
-                              seat_id uuid,
-                              user_id uuid not null,
-                              primary key (id)
-;
+create table reservations
+(
+    id           uuid                        not null,
+    active       boolean                     not null,
+    created_at   timestamp(6) with time zone not null,
+    expires_at   timestamp(6) with time zone,
+    standing_qty integer,
+    event_id     uuid                        not null,
+    seat_id      uuid,
+    user_id      uuid                        not null,
+    primary key (id)
+);
 
 create index ix_email_log_user
     on email_log (user_id)
