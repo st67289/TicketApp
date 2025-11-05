@@ -23,7 +23,6 @@ public class User {
     @Column(name = "user_id")
     @EqualsAndHashCode.Include
     private Long id;
-    // NENÍ LEPŠÍ UUID ?
 
     @Column(name = "first_name")
     private String firstName;
@@ -54,11 +53,10 @@ public class User {
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 
-    // ** RELATIONS **
-
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    // === RELATIONS ===
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
     @ToString.Exclude @EqualsAndHashCode.Exclude
-    private List<Cart> carts;
+    private Cart cart;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @ToString.Exclude @EqualsAndHashCode.Exclude

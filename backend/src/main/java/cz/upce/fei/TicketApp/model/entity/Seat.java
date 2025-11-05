@@ -2,13 +2,18 @@ package cz.upce.fei.TicketApp.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.util.List;
 
 @Entity
-@Table(name = "seats", indexes = {
-        @Index(name = "ix_seats_venue", columnList = "venue_id")
-})
+@Table(
+        name = "seats",
+        indexes = {
+                @Index(name = "ix_seats_venue", columnList = "venue_id")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "ux_seat_venue_row_number", columnNames = {"venue_id", "seat_row", "seat_number"})
+        }
+)
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString
@@ -31,17 +36,8 @@ public class Seat {
     @Column(name = "seat_number")
     private String seatNumber;
 
-
-    /*
-    CO TO JE ? XD
-     */
     @Column(name = "seat_type")
     private String seatType;
-
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive;
-
-    // ** RELATIONS **
 
     @OneToMany(mappedBy = "seat", fetch = FetchType.LAZY)
     @ToString.Exclude @EqualsAndHashCode.Exclude

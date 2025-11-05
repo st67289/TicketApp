@@ -3,7 +3,6 @@ package cz.upce.fei.TicketApp.model.entity;
 import cz.upce.fei.TicketApp.model.enums.TicketStatus;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.math.BigDecimal;
 
 @Entity
@@ -52,8 +51,8 @@ public class Ticket {
     private BigDecimal price;
 
     /*
-    ??????????
-    */
+    ?????
+     */
     @Column(name = "ticket_type")
     private String ticketType;
 

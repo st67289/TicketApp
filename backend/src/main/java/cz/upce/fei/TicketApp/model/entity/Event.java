@@ -6,7 +6,12 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "events")
+@Table(
+        name = "events",
+        indexes = {
+                @Index(name = "ix_events_venue", columnList = "venue_id")
+        }
+)
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString
@@ -34,8 +39,6 @@ public class Event {
     @JoinColumn(name = "venue_id", nullable = false)
     @ToString.Exclude @EqualsAndHashCode.Exclude
     private Venue venue;
-
-    // ** RELATIONS **
 
     @OneToMany(mappedBy = "event", fetch = FetchType.LAZY)
     @ToString.Exclude @EqualsAndHashCode.Exclude
