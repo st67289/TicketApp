@@ -3,6 +3,7 @@ package cz.upce.fei.TicketApp.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -27,11 +28,11 @@ public class Cart {
     @ToString.Exclude @EqualsAndHashCode.Exclude
     private User user;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    @UpdateTimestamp
+    @Column(name = "last_changed", nullable = false)
+    private OffsetDateTime lastChanged;
 
-    @OneToMany(mappedBy = "cart", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "cart", fetch = FetchType.LAZY)
     @ToString.Exclude @EqualsAndHashCode.Exclude
-    private List<CartItem> items;
+    private List<Ticket> tickets;
 }

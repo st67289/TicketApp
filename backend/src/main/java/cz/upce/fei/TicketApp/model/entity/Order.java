@@ -40,7 +40,7 @@ public class Order {
     @Column(name = "payment_status", length = 32)
     private OrderStatus paymentStatus;
 
-    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
     @ToString.Exclude @EqualsAndHashCode.Exclude
-    private List<OrderItem> items;
+    private List<Ticket> tickets;
 }
