@@ -28,10 +28,11 @@ public class Cart {
     @EqualsAndHashCode.Include
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false,
+            foreignKey = @ForeignKey(name = "fk_cart_user"), unique = true)
     @ToString.Exclude @EqualsAndHashCode.Exclude
-    private AppUser appUser;
+    private AppUser user;
 
     @UpdateTimestamp
     @Column(name = "last_changed", nullable = false)

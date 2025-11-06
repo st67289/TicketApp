@@ -54,11 +54,11 @@ public class AppUser {
     private OffsetDateTime createdAt;
 
     // === RELATIONS ===
-    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude @EqualsAndHashCode.Exclude
     private Cart cart;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "appUser", fetch = FetchType.LAZY)
     @ToString.Exclude @EqualsAndHashCode.Exclude
     private List<Order> orders;
 }
