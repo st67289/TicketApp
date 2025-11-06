@@ -31,7 +31,7 @@ public class Cart {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     @ToString.Exclude @EqualsAndHashCode.Exclude
-    private User user;
+    private AppUser appUser;
 
     @UpdateTimestamp
     @Column(name = "last_changed", nullable = false)
