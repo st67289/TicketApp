@@ -3,8 +3,6 @@ package cz.upce.fei.TicketApp.security;
 import cz.upce.fei.TicketApp.model.entity.AppUser;
 import cz.upce.fei.TicketApp.model.enums.UserRoles;
 import cz.upce.fei.TicketApp.repository.UserRepository;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +24,7 @@ public class OAuth2LoginSuccessHandler extends org.springframework.security.web.
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest req, HttpServletResponse res, Authentication auth)
-            throws IOException, ServletException {
+            throws IOException {
         OAuth2User o = (OAuth2User) auth.getPrincipal();
 
         String provider = "google";
@@ -53,7 +51,7 @@ public class OAuth2LoginSuccessHandler extends org.springframework.security.web.
         String jwt = jwtService.generateToken(email);
 
         String redirect = UriComponentsBuilder
-                .fromUriString("http://localhost:3000/oauth2/callback")
+                .fromUriString("http://localhost:5173/oauth2/callback")
                 .queryParam("token", URLEncoder.encode(jwt, StandardCharsets.UTF_8))
                 .build(true).toString();
 

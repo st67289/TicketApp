@@ -1,82 +1,51 @@
 package cz.upce.fei.TicketApp.controller;
 
-import cz.upce.fei.TicketApp.model.entity.AppUser;
-import cz.upce.fei.TicketApp.model.enums.UserRoles;
-import cz.upce.fei.TicketApp.repository.UserRepository;
-import cz.upce.fei.TicketApp.security.JwtService;
-import lombok.Data;
+import cz.upce.fei.TicketApp.dto.AuthResponseDto;
+import cz.upce.fei.TicketApp.dto.LoginDto;
+import cz.upce.fei.TicketApp.dto.RegisterDto;
+import cz.upce.fei.TicketApp.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserRepository users;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final UserService userService;
 
-    // REGISTRACE
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterReq req) {
-        var existing = users.findByEmail(req.getEmail()).orElse(null);
-        if (existing != null) {
-            if (existing.getOauthProvider() != null) {
-                return ResponseEntity.badRequest().body(Map.of("error","Email je už spojen s OAuth účtem."));
-            }
-            return ResponseEntity.badRequest().body(Map.of("error","Email už existuje."));
+    public ResponseEntity<AuthResponseDto> register(@Valid @RequestBody RegisterDto req) {
+        try {
+            AuthResponseDto response = userService.register(req);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                    new AuthResponseDto(null, null, null, null)
+            );
         }
-
-        AppUser u = AppUser.builder()
-                .email(req.getEmail())
-                .passwordHash(passwordEncoder.encode(req.getPassword()))
-                .role(UserRoles.USER)
-                .build();
-        users.save(u);
-
-        String token = jwtService.generateToken(u.getEmail());
-        return ResponseEntity.ok(Map.of("token", token));
     }
 
-    // LOGIN – lokální
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginReq req) {
-        var u = users.findByEmail(req.getEmail()).orElse(null);
-        if (u == null || u.getPasswordHash() == null) {
-            return ResponseEntity.status(401).body(Map.of("error","Nesprávný email/heslo."));
+    public ResponseEntity<AuthResponseDto> login(@Valid @RequestBody LoginDto req) {
+        try {
+            AuthResponseDto response = userService.login(req);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            // můžeš rozlišit status podle zprávy (OAuth 403, běžný login 401)
+            String msg = e.getMessage();
+            return ResponseEntity.status(msg.contains("OAuth") ? 403 : 401)
+                    .body(new AuthResponseDto(null, null, null, null));
         }
-        if (u.getOauthProvider() != null) {
-            return ResponseEntity.status(403).body(Map.of("error","Účet je připojen přes OAuth, použij Google login."));
-        }
-        if (!passwordEncoder.matches(req.getPassword(), u.getPasswordHash())) {
-            return ResponseEntity.status(401).body(Map.of("error","Nesprávný email/heslo."));
-        }
-        String token = jwtService.generateToken(u.getEmail());
-        return ResponseEntity.ok(Map.of("token", token));
     }
 
-    // funguje pro oba způsoby JWT i OATUH
     @GetMapping("/me")
-    public Map<String, Object> me(Principal principal) {
-        if (principal == null) return Map.of("authenticated", false);
-        String email = principal.getName();
-        var u = users.findByEmail(email).orElse(null);
-        return Map.of(
-                "authenticated", u != null,
-                "email", email,
-                "role", u != null ? u.getRole() : null,
-                "provider", u != null ? u.getOauthProvider() : null
-        );
+    public ResponseEntity<AuthResponseDto> me(Principal principal) {
+        AuthResponseDto response = userService.me(principal);
+        return ResponseEntity.ok(response);
     }
-
-    @Data
-    public static class RegisterReq { private String email; private String password; }
-    @Data
-    public static class LoginReq { private String email; private String password; }
 }
