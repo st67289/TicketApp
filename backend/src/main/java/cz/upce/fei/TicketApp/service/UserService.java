@@ -41,7 +41,7 @@ public class UserService {
 
         userRepository.save(user);
 
-        String token = jwtService.generateToken(user.getEmail());
+        String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
         return new AuthResponseDto(token, user.getEmail(), user.getRole(), null);
     }
 
@@ -57,7 +57,7 @@ public class UserService {
             throw new IllegalArgumentException("Nesprávný email/heslo.");
         }
 
-        String token = jwtService.generateToken(u.getEmail());
+        String token = jwtService.generateToken(u.getEmail(), u.getRole().name());
         return new AuthResponseDto(token, u.getEmail(), u.getRole(), null);
     }
 

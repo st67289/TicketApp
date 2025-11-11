@@ -20,15 +20,17 @@ public class JwtService {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(String subject) {
+    public String generateToken(String subject, String role) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setSubject(subject)
+                .claim("role", role)  // přidáme roli
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(now.plusSeconds(ttlSeconds)))
-                .signWith(key(), SignatureAlgorithm.HS256) //  0.11.5 JJWT
+                .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
 
     public String parseSubject(String token) {
         return Jwts.parserBuilder()            //  0.11.5 JJWT

@@ -3,11 +3,13 @@ package cz.upce.fei.TicketApp.security;
 import cz.upce.fei.TicketApp.model.entity.AppUser;
 import cz.upce.fei.TicketApp.model.enums.UserRoles;
 import cz.upce.fei.TicketApp.repository.UserRepository;
+import cz.upce.fei.TicketApp.service.oauth2.ShortCodeStore;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -17,10 +19,10 @@ import java.nio.charset.StandardCharsets;
 
 @Component
 @RequiredArgsConstructor
-public class OAuth2LoginSuccessHandler extends org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler {
+public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final UserRepository users;
-    private final JwtService jwtService;
+    private final ShortCodeStore shortCodeStore;// nová služba pro jednorázové kódy
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest req, HttpServletResponse res, Authentication auth)
@@ -31,7 +33,6 @@ public class OAuth2LoginSuccessHandler extends org.springframework.security.web.
         String sub = (String) o.getAttributes().get("sub");
         String email = (String) o.getAttributes().get("email");
 
-        // buď lokální učet nebo OAuth2
         AppUser existingByEmail = users.findByEmail(email).orElse(null);
         if (existingByEmail != null && existingByEmail.getPasswordHash() != null) {
             res.sendRedirect("/login?error=oauth_forbidden_for_local");
@@ -48,13 +49,16 @@ public class OAuth2LoginSuccessHandler extends org.springframework.security.web.
         user.setOauthId(sub);
         users.save(user);
 
-        String jwt = jwtService.generateToken(email);
+        // Vygeneruj krátkodobý jednorázový kód
+        String shortCode = shortCodeStore.generateCode(email);
+        System.out.println("Generated short code: " + shortCode + " for email: " + email); // DEBUG
 
         String redirect = UriComponentsBuilder
                 .fromUriString("http://localhost:5173/oauth2/callback")
-                .queryParam("token", URLEncoder.encode(jwt, StandardCharsets.UTF_8))
+                .queryParam("code", URLEncoder.encode(shortCode, StandardCharsets.UTF_8))
                 .build(true).toString();
 
+        System.out.println("Redirecting to: " + redirect); // DEBUG
         getRedirectStrategy().sendRedirect(req, res, redirect);
     }
 }

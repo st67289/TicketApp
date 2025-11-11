@@ -13,6 +13,7 @@ import java.util.Set;
 
 @Configuration
 public class OpenApiConfig {
+    //Konfigurace pro swagger
 
     private static final String SECURITY_SCHEME_NAME = "bearerAuth";
 
