@@ -38,6 +38,13 @@ public class SecurityConfig {
                         .requestMatchers("/", "/error", "/public/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/oauth/token").permitAll()
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/auth/register",
+                                "/api/auth/login",
+                                "/api/auth/oauth/token",
+                                "/api/auth/password/forgot",
+                                "/api/auth/password/reset"
+                        ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/**").permitAll()
                         .anyRequest().authenticated()
                 )

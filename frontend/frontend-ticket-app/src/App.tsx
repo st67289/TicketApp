@@ -7,6 +7,7 @@ import OAuthCallback from "./auth/OAuthCallback";
 import NotFound from "./error/NotFound";
 import ErrorPage from "./error/ErrorPage";
 import type { JSX } from "react";
+import ForgotPassword from "./auth/ForgotPassword.tsx";
 
 function App() {
     const token = localStorage.getItem("token");
@@ -29,6 +30,7 @@ function App() {
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
             <Route path="/oauth2/callback" element={<OAuthCallback />} />
+            <Route path="/auth/forgot" element={<ForgotPassword />} />
 
             <Route path="/admin" element={<RequireRole allowed="ADMINISTRATOR"><AdminHome /></RequireRole>} />
             <Route path="/user" element={<RequireRole allowed="USER"><UserHome /></RequireRole>} />
