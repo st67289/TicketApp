@@ -2,21 +2,26 @@ package cz.upce.fei.TicketApp.repository;
 
 import cz.upce.fei.TicketApp.model.entity.Ticket;
 import cz.upce.fei.TicketApp.model.enums.TicketStatus;
+import cz.upce.fei.TicketApp.model.enums.TicketType;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-@Repository
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
-    // pro košík / objednávku
+    // ==== Košík / objednávka ====
+    @EntityGraph(attributePaths = {"event","event.venue","seat"})
     List<Ticket> findAllByCartId(Long cartId);
+
     List<Ticket> findAllByOrderId(Long orderId);
 
-    // pro event/seat
+    // Pro bezpečné mazání položky jen ze svého košíku
+    Optional<Ticket> findByIdAndCartUserEmail(Long id, String email);
+
+    // ==== Event / Seat ====
     List<Ticket> findAllByEventId(Long eventId);
     Optional<Ticket> findByEventIdAndSeatId(Long eventId, Long seatId);
 
@@ -24,24 +29,19 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     long countByEventIdAndSeatId(Long eventId, Long seatId);
 
-    // zabrání kapacity
-    @Query("""
-  select count(t) from Ticket t
-  where t.event.id = :eventId
-    and t.status in :statuses
-""")
-    long countByEventIdAndStatusIn(Long eventId, java.util.Collection<TicketStatus> statuses);
+    // Kolik je u eventu držených/prodaných STANDING lístků
+    long countByEventIdAndTicketTypeAndStatusIn(Long eventId,
+                                                TicketType ticketType,
+                                                Collection<TicketStatus> statuses);
 
-    // kolik lístků není zrušenych
+    // Kolik lístků je v některém z daných stavů
+    long countByEventIdAndStatusIn(Long eventId, Collection<TicketStatus> statuses);
+
+    // Kolik lístků není zrušených
     long countByEventIdAndStatusNot(Long eventId, TicketStatus status);
 
-    // zabraná sedačka ?
-    @Query("""
-  select case when count(t) > 0 then true else false end
-  from Ticket t
-  where t.event.id = :eventId and t.seat.id = :seatId
-    and t.status in :statuses
-""")
-    boolean existsActiveSeat(Long eventId, Long seatId, java.util.Collection<TicketStatus> statuses);
-
+    // Je konkrétní sedadlo pro event už zabrané?
+    boolean existsByEventIdAndSeatIdAndStatusIn(Long eventId,
+                                                Long seatId,
+                                                Collection<TicketStatus> statuses);
 }
