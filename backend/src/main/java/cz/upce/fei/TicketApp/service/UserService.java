@@ -79,22 +79,30 @@ public class UserService {
 
     @Transactional
     public void requestPasswordReset(final ForgotPasswordDto req) {
-        String email = req.getEmail().trim().toLowerCase();
+        final String email = req.getEmail().trim().toLowerCase();
 
         userRepository.findByEmail(email).ifPresent(u -> {
+            if (u.getOauthProvider() != null && u.getPasswordHash() == null) {
+                throw new IllegalArgumentException("Účet je připojen přes Google. Reset hesla není povolen.");
+            }
+
             String code = resetCodeStore.issueCode(email);
-            // Do mailhogu http://localhost:8025/#
             emailService.sendResetCode(email, code);
         });
     }
 
+
     @Transactional
     public void resetPassword(ResetPasswordDto req) {
-        String email = req.getEmail().trim().toLowerCase();
-        String code  = req.getCode().trim();
+        final String email = req.getEmail().trim().toLowerCase();
+        final String code  = req.getCode().trim();
 
         var user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Neplatný kód nebo e-mail."));
+
+        if (user.getOauthProvider() != null && user.getPasswordHash() == null) {
+            throw new IllegalArgumentException("Účet je připojen přes Google. Reset hesla není povolen.");
+        }
 
         boolean ok = resetCodeStore.consume(email, code);
         if (!ok) {
@@ -104,4 +112,5 @@ public class UserService {
         user.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
         userRepository.save(user);
     }
+
 }
