@@ -1,6 +1,7 @@
 package cz.upce.fei.TicketApp.model.entity;
 
 import cz.upce.fei.TicketApp.model.enums.TicketStatus;
+import cz.upce.fei.TicketApp.model.enums.TicketType;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -34,6 +35,10 @@ public class Ticket {
     @ToString.Exclude @EqualsAndHashCode.Exclude
     private Seat seat;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ticket_type", length = 16)
+    private TicketType ticketType;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cart_id")
     @ToString.Exclude @EqualsAndHashCode.Exclude
@@ -49,12 +54,6 @@ public class Ticket {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
-
-    /*
-    ?????
-     */
-    @Column(name = "ticket_type")
-    private String ticketType;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)

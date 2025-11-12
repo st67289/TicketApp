@@ -2,6 +2,8 @@ package cz.upce.fei.TicketApp.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -34,6 +36,12 @@ public class Event {
 
     @Column(name = "end_time")
     private OffsetDateTime endTime;
+
+    @Column(name = "standing_price", precision = 10, scale = 2)
+    private BigDecimal standingPrice;
+
+    @Column(name = "seating_price", precision = 10, scale = 2)
+    private BigDecimal seatingPrice;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "venue_id", nullable = false)

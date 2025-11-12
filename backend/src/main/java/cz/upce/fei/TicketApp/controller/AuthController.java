@@ -4,6 +4,8 @@ import cz.upce.fei.TicketApp.dto.AuthResponseDto;
 import cz.upce.fei.TicketApp.dto.LoginDto;
 import cz.upce.fei.TicketApp.dto.RegisterDto;
 import cz.upce.fei.TicketApp.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +45,7 @@ public class AuthController {
         }
     }
 
+    @Operation(security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/me")
     public ResponseEntity<AuthResponseDto> me(Principal principal) {
         AuthResponseDto response = userService.me(principal);

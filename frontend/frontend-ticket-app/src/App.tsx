@@ -4,6 +4,8 @@ import Register from "./auth/Register";
 import AdminHome from "./admin/AdminHome";
 import UserHome from "./user/UserHome";
 import OAuthCallback from "./auth/OAuthCallback";
+import NotFound from "./error/NotFound";
+import ErrorPage from "./error/ErrorPage";
 import type { JSX } from "react";
 
 function App() {
@@ -18,7 +20,7 @@ function App() {
     }
 
     const RequireRole = ({ children, allowed }: { children: JSX.Element, allowed: string }) => {
-        if (!token || role !== allowed) return <Navigate to="/auth/login" replace />;
+        if (!token || role !== allowed) return <Navigate to="/error/403" replace state={{ message: "Potřebujete oprávnění." }} />;
         return children;
     };
 
@@ -27,9 +29,12 @@ function App() {
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
             <Route path="/oauth2/callback" element={<OAuthCallback />} />
-            <Route path="/admin" element={<RequireRole allowed="ADMIN"><AdminHome /></RequireRole>} />
+
+            <Route path="/admin" element={<RequireRole allowed="ADMINISTRATOR"><AdminHome /></RequireRole>} />
             <Route path="/user" element={<RequireRole allowed="USER"><UserHome /></RequireRole>} />
-            <Route path="*" element={<Navigate to="/auth/login" replace />} />
+
+            <Route path="/error/:code" element={<ErrorPage />} />
+            <Route path="*" element={<NotFound />} />
         </Routes>
     );
 }
