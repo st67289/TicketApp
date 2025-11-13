@@ -29,31 +29,33 @@ public class UserService {
     private final EmailService emailService;
 
     public AuthResponseDto register(RegisterDto req) {
-        if (userRepository.existsByEmail(req.getEmail())) {
+        final String email = req.getEmail().trim().toLowerCase();
+
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new IllegalArgumentException("Email už existuje.");
         }
-
         if (!req.getPassword().equals(req.getConfirmPassword())) {
             throw new IllegalArgumentException("Hesla se neshodují.");
         }
 
         AppUser user = AppUser.builder()
-                .firstName(req.getFirstName())
-                .secondName(req.getSecondName())
+                .firstName(req.getFirstName().trim())
+                .secondName(req.getSecondName().trim())
                 .birthDate(req.getBirthDate())
-                .email(req.getEmail())
+                .email(email)
                 .passwordHash(passwordEncoder.encode(req.getPassword()))
                 .role(UserRoles.USER)
                 .build();
 
         userRepository.save(user);
-
         String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
         return new AuthResponseDto(token, user.getEmail(), user.getRole(), null);
     }
 
     public AuthResponseDto login(LoginDto req) {
-        var u = userRepository.findByEmail(req.getEmail()).orElse(null);
+        final String email = req.getEmail().trim().toLowerCase();
+
+        var u = userRepository.findByEmailIgnoreCase(email).orElse(null);
         if (u == null || u.getPasswordHash() == null) {
             throw new IllegalArgumentException("Nesprávný email/heslo.");
         }
@@ -63,7 +65,6 @@ public class UserService {
         if (!passwordEncoder.matches(req.getPassword(), u.getPasswordHash())) {
             throw new IllegalArgumentException("Nesprávný email/heslo.");
         }
-
         String token = jwtService.generateToken(u.getEmail(), u.getRole().name());
         return new AuthResponseDto(token, u.getEmail(), u.getRole(), null);
     }
@@ -71,7 +72,7 @@ public class UserService {
     public AuthResponseDto me(Principal principal) {
         if (principal == null) return new AuthResponseDto(null, null, null, null);
 
-        var u = userRepository.findByEmail(principal.getName()).orElse(null);
+        var u = userRepository.findByEmailIgnoreCase(principal.getName().trim().toLowerCase()).orElse(null);
         if (u == null) return new AuthResponseDto(null, null, null, null);
 
         return new AuthResponseDto(null, u.getEmail(), u.getRole(), u.getOauthProvider());
@@ -81,7 +82,7 @@ public class UserService {
     public void requestPasswordReset(final ForgotPasswordDto req) {
         final String email = req.getEmail().trim().toLowerCase();
 
-        userRepository.findByEmail(email).ifPresent(u -> {
+        userRepository.findByEmailIgnoreCase(email).ifPresent(u -> {
             if (u.getOauthProvider() != null && u.getPasswordHash() == null) {
                 throw new IllegalArgumentException("Účet je připojen přes Google. Reset hesla není povolen.");
             }
@@ -97,7 +98,7 @@ public class UserService {
         final String email = req.getEmail().trim().toLowerCase();
         final String code  = req.getCode().trim();
 
-        var user = userRepository.findByEmail(email)
+        var user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new IllegalArgumentException("Neplatný kód nebo e-mail."));
 
         if (user.getOauthProvider() != null && user.getPasswordHash() == null) {

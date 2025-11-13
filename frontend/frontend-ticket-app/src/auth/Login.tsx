@@ -35,7 +35,7 @@ export default function Login() {
             const data = await res.json();
             localStorage.setItem("token", data.token);
 
-            if (data.role === "ADMIN") navigate("/admin");
+            if (data.role === "ADMINISTRATOR") navigate("/admin");
             else navigate("/user");
         } catch {
             setError("Nepodařilo se přihlásit.");

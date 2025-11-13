@@ -41,7 +41,7 @@ public class CartService {
 
     // ====== ADD ======
     public CartDto addItem(String email, CartAddItemDto dto) {
-        AppUser user = users.findByEmail(email)
+        AppUser user = users.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new EntityNotFoundException("Uživatel nenalezen: " + email));
 
         Cart cart = carts.findByUserId(user.getId())
@@ -167,7 +167,7 @@ public class CartService {
     }
 
     private Cart createCartFor(String email) {
-        AppUser user = users.findByEmail(email)
+        AppUser user = users.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new EntityNotFoundException("Uživatel nenalezen: " + email));
         return createCart(user);
     }

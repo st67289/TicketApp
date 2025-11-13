@@ -13,11 +13,20 @@ export default function OAuthCallback() {
         const query = new URLSearchParams(location.search);
         const code = query.get("code");
 
-        // spustí se jen jednou
-        if (!code || sentRef.current) return;
-        sentRef.current = true;
+        const existingToken = localStorage.getItem("token");
+        if (existingToken) {
+            navigate("/user", { replace: true });
+            return;
+        }
 
-        console.log("Exchanging code:", code);
+        if (!code || sentRef.current) return;
+
+        if (sessionStorage.getItem(`oauth_used_${code}`) === "1") {
+            navigate("/user", { replace: true });
+            return;
+        }
+
+        sentRef.current = true;
 
         const exchangeCode = async () => {
             try {
@@ -35,16 +44,20 @@ export default function OAuthCallback() {
                 }
 
                 localStorage.setItem("token", data.token);
+                sessionStorage.setItem(`oauth_used_${code}`, "1");
 
-                if (data.role === "ADMIN") navigate("/admin");
-                else navigate("/user");
+                navigate("/user", { replace: true });
             } catch {
                 setError("Nepodařilo se dokončit OAuth přihlášení.");
             }
         };
 
         exchangeCode();
-    }, [location.search, navigate]); // odstraněn `sent` z dependency listu
+    }, [location.search, navigate]);
+    window.history.replaceState({}, "", "/oauth2/callback");
+
+
+
 
     return (
         <div style={{ maxWidth: 400, margin: "50px auto" }}>

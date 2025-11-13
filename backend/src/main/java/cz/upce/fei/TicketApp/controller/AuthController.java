@@ -24,27 +24,12 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponseDto> register(@Valid @RequestBody RegisterDto req) {
-        try {
-            AuthResponseDto response = userService.register(req);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(
-                    new AuthResponseDto(null, null, null, null)
-            );
-        }
+        return ResponseEntity.ok(userService.register(req));
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDto> login(@Valid @RequestBody LoginDto req) {
-        try {
-            AuthResponseDto response = userService.login(req);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            // můžeš rozlišit status podle zprávy (OAuth 403, běžný login 401)
-            String msg = e.getMessage();
-            return ResponseEntity.status(msg.contains("OAuth") ? 403 : 401)
-                    .body(new AuthResponseDto(null, null, null, null));
-        }
+        return ResponseEntity.ok(userService.login(req));
     }
 
     @Operation(security = @SecurityRequirement(name = "bearerAuth"))

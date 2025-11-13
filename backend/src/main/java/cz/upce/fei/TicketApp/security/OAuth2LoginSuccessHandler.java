@@ -48,7 +48,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             user = linked;
         } else {
             // Není linknutý
-            AppUser existingByEmail = users.findByEmail(email).orElse(null);
+            AppUser existingByEmail = users.findByEmailIgnoreCase(email).orElse(null);
 
             if (existingByEmail != null) {
                 // OAuth napojení?

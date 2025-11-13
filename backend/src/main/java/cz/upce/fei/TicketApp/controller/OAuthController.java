@@ -40,7 +40,7 @@ public class OAuthController {
             return ResponseEntity.status(400).body(Map.of("error", "Invalid or expired code"));
         }
 
-        var user = users.findByEmail(email).orElse(null);
+        var user = users.findByEmailIgnoreCase(email).orElse(null);
         if (user == null) {
             return ResponseEntity.status(404).body(Map.of("error", "User not found"));
         }
