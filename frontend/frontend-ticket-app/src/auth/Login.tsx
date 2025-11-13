@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import styles from "./Register.module.css";
 
 const BACKEND_URL = "http://localhost:8080";
 
 export default function Login() {
-    const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -27,7 +26,7 @@ export default function Login() {
                 try {
                     const data = await res.json();
                     msg = data?.message || msg;
-                } catch {  }
+                } catch { /* empty */ }
                 setError(msg);
                 return;
             }
@@ -35,8 +34,11 @@ export default function Login() {
             const data = await res.json();
             localStorage.setItem("token", data.token);
 
-            if (data.role === "ADMINISTRATOR") navigate("/admin");
-            else navigate("/user");
+            if (data.role === "ADMINISTRATOR") {
+                window.location.href = "/admin";
+            } else {
+                window.location.href = "/user";
+            }
         } catch {
             setError("Nepodařilo se přihlásit.");
         } finally {

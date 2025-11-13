@@ -3,6 +3,7 @@ package cz.upce.fei.TicketApp.service;
 import cz.upce.fei.TicketApp.dto.AuthResponseDto;
 import cz.upce.fei.TicketApp.dto.LoginDto;
 import cz.upce.fei.TicketApp.dto.RegisterDto;
+import cz.upce.fei.TicketApp.dto.UserAdminViewDto;
 import cz.upce.fei.TicketApp.dto.password.ForgotPasswordDto;
 import cz.upce.fei.TicketApp.dto.password.ResetPasswordDto;
 import cz.upce.fei.TicketApp.model.entity.AppUser;
@@ -11,12 +12,14 @@ import cz.upce.fei.TicketApp.repository.UserRepository;
 import cz.upce.fei.TicketApp.security.JwtService;
 import cz.upce.fei.TicketApp.service.passwordReset.EmailService;
 import cz.upce.fei.TicketApp.service.passwordReset.ResetCodeStore;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -58,6 +61,9 @@ public class UserService {
         var u = userRepository.findByEmailIgnoreCase(email).orElse(null);
         if (u == null || u.getPasswordHash() == null) {
             throw new IllegalArgumentException("Nesprávný email/heslo.");
+        }
+        if (!u.isEnabled()) {
+            throw new IllegalArgumentException("Váš účet byl zablokován.");
         }
         if (u.getOauthProvider() != null) {
             throw new IllegalArgumentException("Účet je připojen přes OAuth, použij Google login.");
@@ -112,6 +118,46 @@ public class UserService {
 
         user.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
         userRepository.save(user);
+    }
+
+    // ======================================================
+    // METODY PRO ADMINISTRACI
+    // ======================================================
+
+    @Transactional(readOnly = true)
+    public List<UserAdminViewDto> findAllUsersForAdmin() {
+        return userRepository.findAll().stream()
+                .map(this::mapToUserAdminViewDto)
+                .toList();
+    }
+
+    @Transactional
+    public void setBlockedStatus(Long userId, boolean blocked) {
+        AppUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Uživatel s ID " + userId + " nenalezen."));
+
+        // Zabráníme zablokování posledního administrátora
+        if (blocked && user.getRole() == UserRoles.ADMINISTRATOR) {
+            if (userRepository.countByRole(UserRoles.ADMINISTRATOR) <= 1) {
+                throw new IllegalStateException("Nelze zablokovat posledního administrátora.");
+            }
+        }
+
+        user.setEnabled(!blocked); // isEnabled = true (není blokován), isEnabled = false (je blokován)
+        userRepository.save(user);
+    }
+
+    private UserAdminViewDto mapToUserAdminViewDto(AppUser user) {
+        UserAdminViewDto dto = new UserAdminViewDto();
+        dto.setId(user.getId());
+        dto.setFirstName(user.getFirstName());
+        dto.setSecondName(user.getSecondName());
+        dto.setEmail(user.getEmail());
+        dto.setRole(user.getRole());
+        dto.setOauthProvider(user.getOauthProvider());
+        dto.setCreatedAt(user.getCreatedAt());
+        dto.setEnabled(user.isEnabled());
+        return dto;
     }
 
 }

@@ -4,9 +4,10 @@ TRUNCATE TABLE tickets, orders, carts, events, seats, venues, users RESTART IDEN
 
 -- ========== USERS ==========
 -- POZN: password_hash MUSÍ být BCrypt! Viz poznámky níže.
+-- ADMIN HESLO JE password
 INSERT INTO users (first_name, second_name, birth_date, email, password_hash, role, oauth_provider, oauth_id)
 VALUES
-    ('Admin', 'User',  '1990-01-01', 'admin@example.com',  'REPLACE_WITH_BCRYPT_HESLO123', 'ADMINISTRATOR', NULL, NULL),
+    ('Admin', 'User',  '1990-01-01', 'admin@example.com',  '$2a$10$dTHSbYAY2ma/npgILmu8Mej8rlUmgZJE0WWXtQh58sYwRMQqwvdX.', 'ADMINISTRATOR', NULL, NULL),
     ('Jan',   'Novák', '2000-01-01', 'user@example.com',   'REPLACE_WITH_BCRYPT_HESLO123', 'USER',          NULL, NULL);
 
 -- (volitelné) předvytvoření košíků pro oba – není nutné; app si je může založit sama

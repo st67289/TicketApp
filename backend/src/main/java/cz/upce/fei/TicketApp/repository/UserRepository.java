@@ -14,4 +14,6 @@ public interface UserRepository extends JpaRepository<AppUser, Long> {
     Optional<AppUser> findByOauthProviderAndOauthId(String oauthProvider, String oauthId);
     boolean existsByEmailIgnoreCase(String email);
     List<AppUser> findAllByRole(UserRoles role);
+    boolean existsByRole(UserRoles role);
+    long countByRole(UserRoles role);
 }

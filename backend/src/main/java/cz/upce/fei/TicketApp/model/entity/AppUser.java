@@ -53,6 +53,9 @@ public class AppUser {
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 
+    @Column(name = "is_enabled", nullable = false)
+    private boolean isEnabled = true;
+
     // === RELATIONS ===
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude @EqualsAndHashCode.Exclude
