@@ -10,6 +10,7 @@ import cz.upce.fei.TicketApp.repository.TicketRepository;
 import cz.upce.fei.TicketApp.repository.VenueRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -196,39 +198,43 @@ public class EventService {
 
     private Specification<Event> buildSpec(EventFilter f) {
         if (f == null) return null;
+
         return (root, q, cb) -> {
-            var p = cb.conjunction();
+            List<Predicate> preds = new ArrayList<>();
+
+            // explicitní LEFT JOIN na venue (jistota pro kapacity)
+            var venue = root.join("venue", JoinType.LEFT);
+
             if (f.getVenueId() != null) {
-                p.getExpressions().add(cb.equal(root.get("venue").get("id"), f.getVenueId()));
+                preds.add(cb.equal(venue.get("id"), f.getVenueId()));
             }
             if (f.getFrom() != null) {
-                p.getExpressions().add(cb.greaterThanOrEqualTo(root.get("startTime"), f.getFrom()));
+                preds.add(cb.greaterThanOrEqualTo(root.get("startTime"), f.getFrom()));
             }
             if (f.getTo() != null) {
-                p.getExpressions().add(cb.lessThanOrEqualTo(root.get("startTime"), f.getTo()));
+                preds.add(cb.lessThanOrEqualTo(root.get("startTime"), f.getTo()));
             }
             if (f.getQ() != null && !f.getQ().isBlank()) {
-                var like = "%" + f.getQ().toLowerCase() + "%";
-                p.getExpressions().add(cb.like(cb.lower(root.get("name")), like));
+                String like = "%" + f.getQ().toLowerCase() + "%";
+                preds.add(cb.like(cb.lower(root.get("name")), like));
             }
-            // priceMax
             if (f.getPriceMax() != null) {
-                Expression<BigDecimal> sp = root.get("standingPrice").as(BigDecimal.class);
-                Expression<BigDecimal> se = root.get("seatingPrice").as(BigDecimal.class);
-
-                Predicate pricePred = cb.or(
+                Expression<BigDecimal> sp = root.get("standingPrice");
+                Expression<BigDecimal> se = root.get("seatingPrice");
+                preds.add(cb.or(
                         cb.and(cb.isNotNull(sp), cb.lessThanOrEqualTo(sp, f.getPriceMax())),
                         cb.and(cb.isNotNull(se), cb.lessThanOrEqualTo(se, f.getPriceMax()))
-                );
-                p.getExpressions().add(pricePred);
+                ));
             }
             if (Boolean.TRUE.equals(f.getHasStanding())) {
-                p.getExpressions().add(cb.greaterThan(root.get("venue").get("standingCapacity"), 0));
+                preds.add(cb.greaterThan(venue.get("standingCapacity"), 0));
             }
             if (Boolean.TRUE.equals(f.getHasSeating())) {
-                p.getExpressions().add(cb.greaterThan(root.get("venue").get("sittingCapacity"), 0));
+                preds.add(cb.greaterThan(venue.get("sittingCapacity"), 0));
             }
-            return p;
+
+            return preds.isEmpty() ? cb.conjunction() : cb.and(preds.toArray(new Predicate[0]));
         };
     }
+
 }

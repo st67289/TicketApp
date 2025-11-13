@@ -5,16 +5,17 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Data
 public class EventFilter {
     private Long venueId;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    private LocalDateTime from;
+    private OffsetDateTime from;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    private LocalDateTime to;
+    private OffsetDateTime to;
 
     private String q;
     private BigDecimal priceMax;
@@ -22,3 +23,4 @@ public class EventFilter {
     private Boolean hasStanding;
     private Boolean hasSeating;
 }
+
