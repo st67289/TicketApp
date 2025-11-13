@@ -1,24 +1,24 @@
 package cz.upce.fei.TicketApp.dto.event;
 
-import lombok.*;
+import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 
-@Data @NoArgsConstructor @AllArgsConstructor @Builder
+@Data
 public class EventFilter {
-    private String q;
     private Long venueId;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    private LocalDateTime from;
+
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    private LocalDateTime to;
+
+    private String q;
+    private BigDecimal priceMax;
 
     private Boolean hasStanding;
     private Boolean hasSeating;
-
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    private OffsetDateTime from;
-
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    private OffsetDateTime to;
-
-    private BigDecimal priceMax;
 }
