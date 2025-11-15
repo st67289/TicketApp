@@ -1,9 +1,6 @@
 package cz.upce.fei.TicketApp.service;
 
-import cz.upce.fei.TicketApp.dto.event.EventCreateDto;
-import cz.upce.fei.TicketApp.dto.event.EventDetailDto;
-import cz.upce.fei.TicketApp.dto.event.EventListDto;
-import cz.upce.fei.TicketApp.dto.event.EventUpdateDto;
+import cz.upce.fei.TicketApp.dto.event.*;
 import cz.upce.fei.TicketApp.model.entity.Event;
 import cz.upce.fei.TicketApp.model.entity.Venue;
 import cz.upce.fei.TicketApp.model.enums.TicketStatus;
@@ -20,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -65,7 +63,7 @@ class EventServiceTest {
 
         Page<Event> page = new PageImpl<>(List.of(event));
         when(eventRepo.findAll(any(Pageable.class))).thenReturn(page);
-        when(ticketRepo.countByEventIdAndStatusIn(anyLong(), anyList())).thenReturn(5L);
+        when(ticketRepo.countByEventIdAndStatusIn(eq(1L), anyList())).thenReturn(5L);
 
         Page<EventListDto> result = eventService.list(null, PageRequest.of(0, 10));
 
@@ -88,7 +86,7 @@ class EventServiceTest {
                 .startTime(OffsetDateTime.now())
                 .build();
         when(eventRepo.findById(1L)).thenReturn(Optional.of(event));
-        when(ticketRepo.countByEventIdAndStatusIn(anyLong(), anyList())).thenReturn(0L);
+        when(ticketRepo.countByEventIdAndStatusIn(eq(1L), anyList())).thenReturn(0L);
 
         EventDetailDto dto = eventService.detail(1L);
 
@@ -119,8 +117,7 @@ class EventServiceTest {
             return e;
         });
 
-        // použití any() místo anyLong() pro null-safe
-        when(ticketRepo.countByEventIdAndStatusIn(any(), anyList())).thenReturn(0L);
+        when(ticketRepo.countByEventIdAndStatusIn(eq(1L), anyList())).thenReturn(0L);
 
         EventDetailDto result = eventService.create(dto);
 
@@ -129,7 +126,6 @@ class EventServiceTest {
         assertTrue(result.isHasStanding());
         assertTrue(result.isHasSeating());
     }
-
 
     @Test
     void create_EndTimeBeforeStartTime_ThrowsException() {
@@ -147,7 +143,6 @@ class EventServiceTest {
 
     @Test
     void update_ChangesFields() {
-        // připravíme původní event
         Event event = Event.builder()
                 .id(1L)
                 .name("Old Name")
@@ -156,7 +151,6 @@ class EventServiceTest {
                 .build();
         when(eventRepo.findById(1L)).thenReturn(Optional.of(event));
 
-        // update DTO – měníme jen název a cenu stání
         EventUpdateDto updateDto = EventUpdateDto.builder()
                 .name("Updated Name")
                 .standingPrice(BigDecimal.valueOf(15))
@@ -166,10 +160,8 @@ class EventServiceTest {
 
         assertEquals("Updated Name", result.getName());
         assertEquals(BigDecimal.valueOf(15), result.getStandingPrice());
-        assertEquals(venue.getId(), result.getVenue().getId()); // venue zůstává stejná
+        assertEquals(venue.getId(), result.getVenue().getId());
     }
-
-
 
     @Test
     void delete_NoTickets_Success() {
@@ -192,4 +184,39 @@ class EventServiceTest {
         assertEquals("Cannot delete event with existing (non-cancelled) tickets", ex.getMessage());
         verify(eventRepo, never()).delete(event);
     }
+
+    @Test
+    void list_WithFullFilter_CallsBuildSpec() {
+        EventFilter filter = new EventFilter();
+        filter.setVenueId(1L);
+        filter.setFrom(OffsetDateTime.now().minusDays(1));
+        filter.setTo(OffsetDateTime.now().plusDays(1));
+        filter.setQ("concert");
+        filter.setPriceMax(BigDecimal.valueOf(50));
+        filter.setHasStanding(true);
+        filter.setHasSeating(true);
+
+        Event event = Event.builder()
+                .id(1L)
+                .name("My Concert")
+                .startTime(OffsetDateTime.now())
+                .venue(venue)
+                .standingPrice(BigDecimal.valueOf(30))
+                .seatingPrice(BigDecimal.valueOf(40))
+                .build();
+
+        Page<Event> page = new PageImpl<>(List.of(event));
+        when(eventRepo.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        when(ticketRepo.countByEventIdAndStatusIn(eq(1L),
+                anyList())).thenReturn(5L);
+
+        Page<EventListDto> result = eventService.list(filter, PageRequest.of(0, 10));
+
+        assertEquals(1, result.getTotalElements());
+        EventListDto dto = result.getContent().get(0);
+        assertEquals("My Concert", dto.getName());
+        assertTrue(dto.isHasStanding());
+        assertTrue(dto.isHasSeating());
+    }
+
 }
