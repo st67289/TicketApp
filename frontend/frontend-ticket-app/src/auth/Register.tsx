@@ -49,7 +49,26 @@ export default function Register() {
 
     return (
         <div className={styles.hero}>
-            <div className={styles.card}>
+            <div className={styles.card} style={{ position: "relative" }}>
+                <Link
+                    to="/events"
+                    style={{
+                        position: "absolute",
+                        top: 12,
+                        left: 12,
+                        padding: "6px 10px",
+                        fontSize: 12,
+                        background: "rgba(124,58,237,0.85)",
+                        color: "#fff",
+                        borderRadius: 8,
+                        textDecoration: "none",
+                        fontWeight: 600,
+                        zIndex: 10
+                    }}
+                >
+                    Procházet akce
+                </Link>
+
                 <header className={styles.header}>
           <span className={styles.logo} aria-hidden="true">
             {/*SVG*/}

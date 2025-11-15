@@ -48,16 +48,35 @@ export default function Login() {
 
     return (
         <div className={styles.hero}>
-            <div className={styles.card}>
+            <div className={styles.card} style={{ position: "relative" }}>
+                <Link
+                    to="/events"
+                    style={{
+                        position: "absolute",
+                        top: 12,
+                        left: 12,
+                        padding: "6px 10px",
+                        fontSize: 12,
+                        background: "rgba(124,58,237,0.85)",
+                        color: "#fff",
+                        borderRadius: 8,
+                        textDecoration: "none",
+                        fontWeight: 600,
+                        zIndex: 10
+                    }}
+                >
+                    Procházet akce
+                </Link>
+
                 <header className={styles.header}>
-          <span className={styles.logo} aria-hidden="true">
-            <svg viewBox="0 0 64 64" className={styles.logoIcon} role="img" aria-label="Ticket icon">
-              <path d="M8 20a4 4 0 0 1 4-4h22a4 4 0 0 0 4-4h6a4 4 0 0 1 4 4v8a4 4 0 0 0 0 8v8a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V20z" />
-              <circle cx="28" cy="22" r="2" />
-              <circle cx="34" cy="22" r="2" />
-              <circle cx="40" cy="22" r="2" />
-            </svg>
-          </span>
+                    <span className={styles.logo} aria-hidden="true">
+                        <svg viewBox="0 0 64 64" className={styles.logoIcon} role="img" aria-label="Ticket icon">
+                            <path d="M8 20a4 4 0 0 1 4-4h22a4 4 0 0 0 4-4h6a4 4 0 0 1 4 4v8a4 4 0 0 0 0 8v8a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V20z" />
+                            <circle cx="28" cy="22" r="2" />
+                            <circle cx="34" cy="22" r="2" />
+                            <circle cx="40" cy="22" r="2" />
+                        </svg>
+                    </span>
                     <h1 className={styles.title}>Přihlášení</h1>
                     <p className={styles.subtitle}>Vrať se k lovu těch nejlepších míst.</p>
                 </header>

@@ -48,11 +48,14 @@ const primary: React.CSSProperties = {
 
 export default function Navbar() {
     const navigate = useNavigate();
+    const token = localStorage.getItem("token"); // kontrola přihlášení
 
     const logout = () => {
         localStorage.removeItem("token");
         navigate("/auth/login", { replace: true });
     };
+
+    const onEventsPage = location.pathname === "/events" || location.pathname === "/";
 
     return (
         <nav style={navWrap} role="navigation" aria-label="Main">
@@ -64,10 +67,11 @@ export default function Navbar() {
             </Link>
 
             <div style={navLinks}>
-                <Link to="/events" style={pill}>Procházet akce</Link>
-                <Link to="/user/tickets" style={pill}>Moje vstupenky</Link>
-                <Link to="/user/account" style={pill}>Účet</Link>
-                <button style={primary} onClick={logout} aria-label="Odhlásit se">Odhlásit</button>
+                {!onEventsPage && <Link to="/events" style={pill}>Procházet akce</Link>}
+                {token && <Link to="/user/tickets" style={pill}>Moje vstupenky</Link>}
+                {token && <Link to="/user/account" style={pill}>Účet</Link>}
+                {token && <button style={primary} onClick={logout} aria-label="Odhlásit se">Odhlásit</button>}
+                {!token && <Link to="/auth/login" style={primary}>Přihlásit</Link>}
             </div>
         </nav>
     );

@@ -45,6 +45,7 @@ function App() {
 
     return (
         <Routes>
+            <Route path="/" element={<EventsList />} />
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
             <Route path="/oauth2/callback" element={<OAuthCallback />} />
