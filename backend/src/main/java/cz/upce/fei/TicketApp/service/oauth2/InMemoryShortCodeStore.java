@@ -22,8 +22,14 @@ public class InMemoryShortCodeStore implements ShortCodeStore {
 
     private final Map<String, String> codeToEmail = new ConcurrentHashMap<>();
     private final Map<String, Instant> codeExpiry = new ConcurrentHashMap<>();
-    private final long ttlSeconds = 120; // kód platí 2 minuty
+    private final long ttlSeconds;
 
+    public InMemoryShortCodeStore() {
+        this.ttlSeconds = 120; // kód platí 2 minuty
+    }
+    public InMemoryShortCodeStore(long ttlSeconds) { // pro testovaci ucely
+        this.ttlSeconds = ttlSeconds;
+    }
     @Override
     public String generateCode(String email) {
         String code = UUID.randomUUID().toString();
