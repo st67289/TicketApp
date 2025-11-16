@@ -25,6 +25,30 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
 
+# docker-compose up -d --build --scale app={pocet instanci}
+# prikaz by mel buildnout celej backend a pak spustit vsechny sluzby v compose vcetne javy
+  app:
+    build: .
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ticket_app
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+
+  nginx:
+    image: nginx:latest
+    container_name: ticket-load-balancer
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+    depends_on:
+      - app
+
 volumes:
   postgres_data:
     driver: local
