@@ -1,4 +1,4 @@
-package cz.upce.fei.TicketApp.dto;
+package cz.upce.fei.TicketApp.dto.admin;
 
 import cz.upce.fei.TicketApp.model.enums.UserRoles;
 import lombok.Data;

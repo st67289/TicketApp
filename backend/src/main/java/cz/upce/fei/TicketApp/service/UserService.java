@@ -3,9 +3,10 @@ package cz.upce.fei.TicketApp.service;
 import cz.upce.fei.TicketApp.dto.AuthResponseDto;
 import cz.upce.fei.TicketApp.dto.LoginDto;
 import cz.upce.fei.TicketApp.dto.RegisterDto;
-import cz.upce.fei.TicketApp.dto.UserAdminViewDto;
+import cz.upce.fei.TicketApp.dto.admin.UserAdminViewDto;
 import cz.upce.fei.TicketApp.dto.password.ForgotPasswordDto;
 import cz.upce.fei.TicketApp.dto.password.ResetPasswordDto;
+import cz.upce.fei.TicketApp.dto.user.UserDto;
 import cz.upce.fei.TicketApp.model.entity.AppUser;
 import cz.upce.fei.TicketApp.model.enums.UserRoles;
 import cz.upce.fei.TicketApp.repository.UserRepository;
@@ -158,6 +159,47 @@ public class UserService {
         dto.setCreatedAt(user.getCreatedAt());
         dto.setEnabled(user.isEnabled());
         return dto;
+    }
+
+    //metody pro zobrazení a změnu profilu
+    public UserDto getCurrentUser(Principal principal) {
+        if (principal == null) return null;
+
+        var u = userRepository.findByEmailIgnoreCase(principal.getName().trim().toLowerCase())
+                .orElse(null);
+        if (u == null) return null;
+
+        return UserDto.builder()
+                .firstName(u.getFirstName())
+                .secondName(u.getSecondName())
+                .birthDate(u.getBirthDate())
+                .email(u.getEmail())
+                .role(u.getRole().name())
+                .createdAt(u.getCreatedAt().toString())
+                .build();
+    }
+
+    @Transactional
+    public UserDto updateCurrentUser(Principal principal, UserDto dto) {
+        if (principal == null) throw new IllegalArgumentException("Neautorizovaný uživatel");
+
+        var user = userRepository.findByEmailIgnoreCase(principal.getName().trim().toLowerCase())
+                .orElseThrow(() -> new IllegalArgumentException("Uživatel nenalezen"));
+
+        user.setFirstName(dto.getFirstName());
+        user.setSecondName(dto.getSecondName());
+        user.setBirthDate(dto.getBirthDate());
+
+        userRepository.save(user);
+
+        return UserDto.builder()
+                .firstName(user.getFirstName())
+                .secondName(user.getSecondName())
+                .birthDate(user.getBirthDate())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .createdAt(user.getCreatedAt().toString())
+                .build();
     }
 
 }
