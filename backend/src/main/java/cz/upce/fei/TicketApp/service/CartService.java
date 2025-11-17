@@ -133,33 +133,40 @@ public class CartService {
             throw new IllegalArgumentException("Event/venue nemá kapacitu pro stání.");
         }
 
-        long alreadyHeld = tickets.countByEventIdAndTicketTypeAndStatusIn(
-                event.getId(),
-                TicketType.STANDING,
-                List.of(TicketStatus.RESERVED, TicketStatus.ISSUED, TicketStatus.USED)
-        );
+        String lockKey = "lock:standing:" + event.getId();
+        RLock lock = redisson.getLock(lockKey);
+        lock.lock();
+        try {
+            long alreadyHeld = tickets.countByEventIdAndTicketTypeAndStatusIn(
+                    event.getId(),
+                    TicketType.STANDING,
+                    List.of(TicketStatus.RESERVED, TicketStatus.ISSUED, TicketStatus.USED)
+            );
 
-        if (alreadyHeld + qty > cap) {
-            throw new IllegalStateException("Nedostatečná kapacita pro stání.");
+            if (alreadyHeld + qty > cap) {
+                throw new IllegalStateException("Nedostatečná kapacita pro stání.");
+            }
+
+            BigDecimal price = event.getStandingPrice();
+            for (int i = 0; i < qty; i++) {
+                Ticket t = Ticket.builder()
+                        .event(event)
+                        .seat(null)
+                        .ticketType(TicketType.STANDING)
+                        .cart(cart)
+                        .order(null)
+                        .ticketCode(genCode(event.getId()))
+                        .price(price)
+                        .status(TicketStatus.RESERVED)
+                        .build();
+                tickets.save(t);
+            }
+
+            Cart reloaded = carts.findById(cart.getId()).orElseThrow();
+            return mapCart(reloaded);
+        } finally {
+            lock.unlock();
         }
-
-        BigDecimal price = event.getStandingPrice();
-        for (int i = 0; i < qty; i++) {
-            Ticket t = Ticket.builder()
-                    .event(event)
-                    .seat(null)
-                    .ticketType(TicketType.STANDING)
-                    .cart(cart)
-                    .order(null)
-                    .ticketCode(genCode(event.getId()))
-                    .price(price)
-                    .status(TicketStatus.RESERVED)
-                    .build();
-            tickets.save(t);
-        }
-
-        Cart reloaded = carts.findById(cart.getId()).orElseThrow();
-        return mapCart(reloaded);
     }
 
     private String genCode(Long eventId) {
