@@ -75,6 +75,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                         .role(UserRoles.USER)
                         .oauthProvider(provider)
                         .oauthId(sub)
+                        .isEnabled(true)
                         //.firstName()
                         //.familyName()
                         .build();

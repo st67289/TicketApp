@@ -306,10 +306,10 @@ export default function EventsList() {
                         <div>
                             <label style={label}>Řazení</label>
                             <select style={select} value={sort} onChange={e => setSort(e.target.value as SortKey)}>
-                                <option value="dateAsc">Datum ↑ (BE)</option>
-                                <option value="dateDesc">Datum ↓ (BE)</option>
-                                <option value="priceAscFE">Cena ↑ (FE)</option>
-                                <option value="priceDescFE">Cena ↓ (FE)</option>
+                                <option value="dateAsc">Datum ↑ </option>
+                                <option value="dateDesc">Datum ↓ </option>
+                                <option value="priceAsc">Cena ↑ </option>
+                                <option value="priceDesc">Cena ↓ </option>
                             </select>
                         </div>
                     </div>
