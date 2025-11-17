@@ -1,7 +1,7 @@
 // in cz.upce.fei.TicketApp.controller.AdminController.java
 package cz.upce.fei.TicketApp.controller;
 
-import cz.upce.fei.TicketApp.dto.UserAdminViewDto;
+import cz.upce.fei.TicketApp.dto.admin.UserAdminViewDto;
 import cz.upce.fei.TicketApp.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
