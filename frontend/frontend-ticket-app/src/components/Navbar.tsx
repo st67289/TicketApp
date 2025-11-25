@@ -46,6 +46,17 @@ const primary: React.CSSProperties = {
     fontWeight: 700
 };
 
+// Styl pro košík (volitelně trochu zvýrazněný)
+const cartLink: React.CSSProperties = {
+    ...pill,
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    background: "rgba(34, 211, 238, 0.1)", // lehký tint do modra
+    borderColor: "rgba(34, 211, 238, 0.3)",
+    color: "#22d3ee"
+};
+
 export default function Navbar() {
     const navigate = useNavigate();
     const token = localStorage.getItem("token"); // kontrola přihlášení
@@ -70,6 +81,7 @@ export default function Navbar() {
                 {!onEventsPage && <Link to="/events" style={pill}>Procházet akce</Link>}
                 {token && <Link to="/user/tickets" style={pill}>Moje vstupenky</Link>}
                 {token && <Link to="/user/account" style={pill}>Účet</Link>}
+                {token && (<Link to="/cart" style={cartLink}>🛒 Košík</Link>)}
                 {token && <button style={primary} onClick={logout} aria-label="Odhlásit se">Odhlásit</button>}
                 {!token && <Link to="/auth/login" style={primary}>Přihlásit</Link>}
             </div>

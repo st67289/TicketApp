@@ -11,6 +11,7 @@ import ForgotPassword from "./auth/ForgotPassword";
 import UserDashboard from "./pages/UserDashboard";
 import EventsList from "./pages/EventsList";
 import Profile from "./user/Profile.tsx";
+import CartPage from "./pages/CartPage.tsx";
 
 function EventDetailPlaceholder() { return <div style={{padding:24,color:"#e6e9ef",background:"#0b0f1a",minHeight:"100vh"}}>Detail eventu – bude později 🙂</div> }
 
@@ -22,7 +23,7 @@ function App() {
         try {
             const payload = JSON.parse(atob(token.split(".")[1]));
             role = payload.role;
-        } catch {}
+        } catch { /* empty */ }
     }
 
     const RequireRole = ({
@@ -54,6 +55,7 @@ function App() {
 
             <Route path="/admin" element={<RequireRole allowed="ADMINISTRATOR"><AdminHome /></RequireRole>}/>
             <Route path="/user" element={<RequireRole allowed="USER"><UserDashboard /></RequireRole>}/>
+            <Route path="/cart" element={<RequireRole allowed="USER"><CartPage /></RequireRole>} />
 
             <Route path="/events" element={<EventsList />} />
             <Route path="/events/:id" element={<EventDetailPlaceholder />} />
