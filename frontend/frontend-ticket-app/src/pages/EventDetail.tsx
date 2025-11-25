@@ -65,7 +65,7 @@ export default function EventDetail() {
     // Stav pro mapu sezení
     const [venueSeats, setVenueSeats] = useState<SeatDto[]>([]); // Všechna sedadla
     const [occupiedIds, setOccupiedIds] = useState<number[]>([]); // Obsazená ID
-    const [selectedSeatId, setSelectedSeatId] = useState<number | null>(null);
+    const [selectedSeatIds, setSelectedSeatIds] = useState<number[]>([]);
 
     // Stav pro stání
     const [standingQty, setStandingQty] = useState(1);
@@ -120,43 +120,71 @@ export default function EventDetail() {
     const handleAddToCart = async (type: "STANDING" | "SEATING") => {
         const token = localStorage.getItem("token");
         if (!token) {
-            // Pokud není přihlášen, šup na login
             navigate("/auth/login", { state: { from: `/events/${id}` } });
             return;
         }
 
+        // Validace před odesláním
+        if (type === "SEATING" && selectedSeatIds.length === 0) return;
+
         setAdding(true);
         try {
-            // Sestavíme body podle typu
-            const body = type === "STANDING"
-                ? { type: "STANDING", eventId: event?.id, quantity: standingQty }
-                : { type: "SEATING", eventId: event?.id, seatId: selectedSeatId };
+            if (type === "STANDING") {
+                // Stání pošleme jednou (tam je quantity)
+                const res = await fetch(`${BACKEND_URL}/api/carts/items`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ type: "STANDING", eventId: event?.id, quantity: standingQty })
+                });
+                if (!res.ok) throw new Error("Chyba při stání");
 
-            const res = await fetch(`${BACKEND_URL}/api/carts/items`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(body)
-            });
-
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                alert(err.message || "Nelze přidat do košíku (možná už je místo zabrané).");
-
-                // Pokud se to nepovedlo (někdo to vyfoukl), přenačteme mapu
-                if (type === "SEATING") loadData();
             } else {
-                // Úspěch -> jdeme do košíku
-                navigate("/cart");
+                // Sezení: Musíme poslat request pro každé vybrané sedadlo zvlášť
+                // Použijeme Promise.all, aby se to poslalo paralelně (rychleji)
+                const requests = selectedSeatIds.map(seatId =>
+                    fetch(`${BACKEND_URL}/api/carts/items`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ type: "SEATING", eventId: event?.id, seatId: seatId })
+                    })
+                );
+
+                const responses = await Promise.all(requests);
+
+                // Zkontrolujeme, jestli všechny prošly
+                const failed = responses.some(r => !r.ok);
+                if (failed) {
+                    alert("Některá sedadla se nepodařilo přidat (možná je někdo právě vyfoukl).");
+                    loadData(); // Přenačteme mapu
+                    // I tak ale přesměrujeme do košíku s tím, co se povedlo
+                }
             }
+
+            navigate("/cart");
+
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
             alert("Chyba komunikace se serverem.");
         } finally {
             setAdding(false);
         }
+    };
+
+    // funkce pro přidání označené sedačky do pole (kde jsou místa ke koupi - vybrat jich můžu i víc)
+    const toggleSeat = (seatId: number) => {
+        setSelectedSeatIds(prev => {
+            if (prev.includes(seatId)) {
+                // Pokud už je vybrané, odebereme ho
+                return prev.filter(id => id !== seatId);
+            } else {
+                // Jinak ho přidáme (můžeš zde dát limit, např. max 6 lístků)
+                if (prev.length >= 6) {
+                    alert("Můžete vybrat maximálně 6 sedadel.");
+                    return prev;
+                }
+                return [...prev, seatId];
+            }
+        });
     };
 
     // 3. Vykreslení mapy
@@ -193,15 +221,14 @@ export default function EventDetail() {
                             {/* Sedadla */}
                             {rowSeats.map(seat => {
                                 const isTaken = occupiedIds.includes(seat.id);
-                                const isSelected = selectedSeatId === seat.id;
+                                const isSelected = selectedSeatIds.includes(seat.id);
                                 const status = isTaken ? "taken" : (isSelected ? "selected" : "free");
 
                                 return (
                                     <div
                                         key={seat.id}
                                         style={seatBox(status)}
-                                        // Kliknutím vybereme / zrušíme výběr (pokud není obsazené)
-                                        onClick={() => !isTaken && setSelectedSeatId(prev => prev === seat.id ? null : seat.id)}
+                                        onClick={() => !isTaken && toggleSeat(seat.id)}
                                         title={`Řada ${seat.seatRow}, Místo ${seat.seatNumber}`}
                                     >
                                         {seat.seatNumber}
@@ -283,13 +310,18 @@ export default function EventDetail() {
                             <button
                                 style={{
                                     ...btnPrimary,
-                                    opacity: selectedSeatId ? 1 : 0.5,
-                                    cursor: selectedSeatId ? "pointer" : "not-allowed"
+                                    opacity: selectedSeatIds.length > 0 ? 1 : 0.5,
+                                    cursor: selectedSeatIds.length > 0 ? "pointer" : "not-allowed"
                                 }}
-                                disabled={!selectedSeatId || adding}
+                                disabled={selectedSeatIds.length === 0 || adding}
                                 onClick={() => handleAddToCart("SEATING")}
                             >
-                                {adding ? "Zpracovávám..." : (selectedSeatId ? "Koupit vybrané místo" : "Vyberte místo na mapě")}
+                                {adding
+                                    ? "Zpracovávám..."
+                                    : (selectedSeatIds.length > 0
+                                        ? `Koupit ${selectedSeatIds.length} vybraná místa`
+                                        : "Vyberte místa na mapě")
+                                }
                             </button>
                         </div>
                     </div>
