@@ -100,21 +100,19 @@ export default function CartPage() {
         if (!cart || cart.items.length === 0) return;
         setProcessing(true);
 
-        // Simulace prodlevy platební brány
+        // Simulace prodlevy
         setTimeout(async () => {
             const token = localStorage.getItem("token");
             try {
-                //TODO
-                // TADY BUDE V BUDOUCNU: POST /api/orders (vytvoření objednávky)
-                // TEĎ PRO MOCK: Zavoláme DELETE /api/carts/items (vyčistit košík)
-                const res = await fetch(`${BACKEND_URL}/api/carts/items`, {
-                    method: "DELETE",
+                // VOLÁNÍ BACKENDU PRO VYTVOŘENÍ OBJEDNÁVKY
+                const res = await fetch(`${BACKEND_URL}/api/orders`, {
+                    method: "POST",
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
                 if (res.ok) {
-                    alert("Platba proběhla úspěšně! Vstupenky byly odeslány na email. (Mock)");
-                    navigate("/user"); // Přesměrování na dashboard nebo vstupenky
+                    alert("Platba proběhla úspěšně!");
+                    navigate("/user/tickets"); // Přesměrování na Moje vstupenky
                 } else {
                     alert("Chyba při zpracování platby.");
                 }

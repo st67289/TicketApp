@@ -46,4 +46,13 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
                                                 Collection<TicketStatus> statuses);
 
     List<Ticket> findAllByEventIdAndStatusNot(Long eventId, TicketStatus status);
+
+    // Najde všechny vstupenky uživatele, které jsou v určitých stavech (např. ISSUED)
+    // Používáme EntityGraph pro efektivní načtení Eventu a Venue
+    @EntityGraph(attributePaths = {"event", "event.venue", "seat"})
+    List<Ticket> findAllByOrderAppUserEmailAndStatusIn(String email, Collection<TicketStatus> statuses);
+
+    // Pro košík (pokud už tam nemáš ten EntityGraph, hodí se)
+//    @EntityGraph(attributePaths = {"event", "event.venue", "seat"})
+//    List<Ticket> findAllByCartId(Long cartId);
 }

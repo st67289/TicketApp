@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const navWrap: React.CSSProperties = {
     position: "fixed",
@@ -59,6 +59,7 @@ const cartLink: React.CSSProperties = {
 
 export default function Navbar() {
     const navigate = useNavigate();
+    const location = useLocation();
     const token = localStorage.getItem("token"); // kontrola přihlášení
 
     const logout = () => {
