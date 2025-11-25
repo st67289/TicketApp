@@ -17,6 +17,9 @@ public class EventListDto {
     private boolean hasSeating;    // enableSeating  && sittingCapacity>0
 
     private BigDecimal fromPrice;
+    private BigDecimal standingPrice;
+    private BigDecimal seatingPrice;
+
     private Integer available;     // dopočítané
     private Integer total;         // dopočítané
 }

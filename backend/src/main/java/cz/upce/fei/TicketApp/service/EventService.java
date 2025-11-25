@@ -142,6 +142,8 @@ public class EventService {
                 .hasStanding(hasStanding)
                 .hasSeating(hasSeating)
                 .fromPrice(fromPrice)
+                .standingPrice(e.getStandingPrice())
+                .seatingPrice(e.getSeatingPrice())
                 .available(available)
                 .total(total)
                 .build();
