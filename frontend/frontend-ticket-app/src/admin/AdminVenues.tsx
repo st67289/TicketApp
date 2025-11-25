@@ -1,6 +1,7 @@
 // src/admin/AdminVenues.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import SeatingDesigner from "./SeatingDesigner";
 
 // =================================================================
 // STYLY (půjčené a upravené pro tuto komponentu)
@@ -221,8 +222,42 @@ export default function AdminVenues() {
                                     <input style={formInput} type="number" name="sittingCapacity" value={formData.sittingCapacity} onChange={handleFormChange} min="0" />
                                 </div>
                                 <div style={fullWidthField}>
-                                    <label style={formLabel}>Plán sezení (JSON)</label>
-                                    <textarea style={formTextarea} name="seatingPlanJson" value={formData.seatingPlanJson} onChange={handleFormChange} placeholder='{ "rows": [ ... ] }' />
+                                    <label style={formLabel}>Plán sezení (Editor)</label>
+
+                                    <SeatingDesigner
+                                        initialJson={formData.seatingPlanJson || '{"rows":[]}'}
+                                        onChange={(newJson) => {
+                                            // 1. Vypočítáme novou kapacitu z JSONu
+                                            let newTotalSeats = 0;
+                                            try {
+                                                const parsed = JSON.parse(newJson);
+                                                if (Array.isArray(parsed.rows)) {
+                                                    // Sečteme 'count' ze všech řad
+                                                    newTotalSeats = parsed.rows.reduce((sum: number, row: { count: number | string }) => sum + (Number(row.count) || 0), 0);
+                                                }
+                                            } catch (e) {
+                                                console.error("Chyba při výpočtu kapacity", e);
+                                            }
+
+                                            // 2. Nastavíme JSON i novou kapacitu do stavu najednou
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                seatingPlanJson: newJson,
+                                                sittingCapacity: newTotalSeats
+                                            }));
+                                        }}
+                                    />
+                                    <div style={{ marginTop: 8 }}>
+                                        <details>
+                                            <summary style={{ fontSize: 12, color: "#a7b0c0", cursor: "pointer" }}>Zobrazit vygenerovaný JSON</summary>
+                                            <textarea
+                                                style={{ ...formTextarea, minHeight: "80px", fontSize: "12px", marginTop: 5 }}
+                                                name="seatingPlanJson"
+                                                value={formData.seatingPlanJson}
+                                                readOnly
+                                            />
+                                        </details>
+                                    </div>
                                 </div>
                             </div>
                             <div style={{ ...buttonBar, marginTop: '20px', justifyContent: 'flex-end' }}>
