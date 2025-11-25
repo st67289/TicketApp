@@ -5,6 +5,9 @@ import cz.upce.fei.TicketApp.dto.event.EventDetailDto;
 import cz.upce.fei.TicketApp.dto.event.EventFilter;
 import cz.upce.fei.TicketApp.dto.event.EventListDto;
 import cz.upce.fei.TicketApp.dto.event.EventUpdateDto;
+import cz.upce.fei.TicketApp.model.entity.Ticket;
+import cz.upce.fei.TicketApp.model.enums.TicketStatus;
+import cz.upce.fei.TicketApp.repository.TicketRepository;
 import cz.upce.fei.TicketApp.service.EventService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +21,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/api/events")
@@ -25,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 public class EventController {
 
     private final EventService eventService;
+    private final TicketRepository ticketRepository;
 
 
     // =================================================================
@@ -42,6 +49,19 @@ public class EventController {
     @GetMapping("/{id}")
     public ResponseEntity<EventDetailDto> detail(@PathVariable Long id) {
         return ResponseEntity.ok(eventService.detail(id));
+    }
+
+    @GetMapping("/{id}/occupied-seats")
+    public ResponseEntity<List<Long>> getOccupiedSeats(@PathVariable Long id) {
+        // Můžeš to dát do EventService, nebo to nechat tady pro rychlost:
+        List<Ticket> tickets = ticketRepository.findAllByEventIdAndStatusNot(id, TicketStatus.CANCELLED);
+
+        List<Long> ids = tickets.stream()
+                .filter(t -> t.getSeat() != null)
+                .map(t -> t.getSeat().getId())
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(ids);
     }
 
 
@@ -80,4 +100,5 @@ public class EventController {
         eventService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
 }

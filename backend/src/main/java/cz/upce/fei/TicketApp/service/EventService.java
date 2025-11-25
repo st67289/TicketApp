@@ -185,6 +185,7 @@ public class EventService {
                 .id(v.getId())
                 .name(v.getName())
                 .address(v.getAddress())
+                .seatingPlanJson(v.getSeatingPlanJson())
                 .build();
     }
 

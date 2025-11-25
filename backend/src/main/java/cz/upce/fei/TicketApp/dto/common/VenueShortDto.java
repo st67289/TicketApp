@@ -7,4 +7,5 @@ public class VenueShortDto {
     private Long id;
     private String name;
     private String address;
+    private String seatingPlanJson;
 }

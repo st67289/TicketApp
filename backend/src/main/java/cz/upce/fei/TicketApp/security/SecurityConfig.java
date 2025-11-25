@@ -47,6 +47,8 @@ public class SecurityConfig {
                                 "/api/auth/password/reset"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/venues/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMINISTRATOR")
                         .anyRequest().authenticated()
                 )

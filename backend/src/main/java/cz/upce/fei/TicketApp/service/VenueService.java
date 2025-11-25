@@ -2,6 +2,7 @@ package cz.upce.fei.TicketApp.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import cz.upce.fei.TicketApp.dto.common.SeatDto;
 import cz.upce.fei.TicketApp.dto.venue.VenueDto;
 import cz.upce.fei.TicketApp.dto.venue.VenueCreateUpdateDto;
 import cz.upce.fei.TicketApp.model.entity.Seat;
@@ -85,6 +86,17 @@ public class VenueService {
         }
         seatRepository.deleteByVenueId(id);
         venueRepository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SeatDto> getSeatsByVenueId(Long venueId) {
+        return seatRepository.findAllByVenueId(venueId).stream()
+                .map(seat -> new SeatDto(
+                        seat.getId(),
+                        seat.getSeatRow(),
+                        seat.getSeatNumber()
+                ))
+                .collect(Collectors.toList());
     }
 
     // --- LOGIKA GENERIVÁNÍ SEDADEL ---
