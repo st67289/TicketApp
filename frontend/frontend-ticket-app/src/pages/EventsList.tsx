@@ -129,7 +129,7 @@ type PageResp<T> = {
     last: boolean;
 };
 
-type SortKey = "dateAsc" | "dateDesc" | "priceAscFE" | "priceDescFE";
+type SortKey = "dateAsc" | "dateDesc" | "priceAsc" | "priceDesc";
 type QuickRange = "none" | "week" | "month";
 
 function toIsoDayStart(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x.toISOString(); }
@@ -241,11 +241,11 @@ export default function EventsList() {
     // FE price sort uvnitř stránky:
     const contentSorted = useMemo(() => {
         const c = pageData?.content ?? [];
-        if (sort === "priceAscFE" || sort === "priceDescFE") {
+        if (sort === "priceAsc" || sort === "priceDesc") {
             return [...c].sort((a, b) => {
                 const aa = a.fromPrice ?? Number.POSITIVE_INFINITY;
                 const bb = b.fromPrice ?? Number.POSITIVE_INFINITY;
-                return sort === "priceAscFE" ? aa - bb : bb - aa;
+                return sort === "priceAsc" ? aa - bb : bb - aa;
             });
         }
         return c;
