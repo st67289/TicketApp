@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 
 // --- STYLY (Konzistentní s EventsList) ---
-const wrap: React.CSSProperties = { minHeight: "100dvh", padding: "100px 24px 40px", background: "linear-gradient(160deg,#0b0f1a,#181d2f)", color: "#e6e9ef", fontFamily: "Inter, sans-serif" };
+const wrap: React.CSSProperties = { minHeight: "100dvh", paddingTop: "150px", padding: "140px 24px 40px", background: "linear-gradient(160deg,#0b0f1a,#181d2f)", color: "#e6e9ef", fontFamily: "Inter, sans-serif" };
 const container: React.CSSProperties = { width: "min(900px, 94vw)", margin: "0 auto" };
 const panel: React.CSSProperties = { background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24, backdropFilter: "blur(10px)" };
 const h1: React.CSSProperties = { marginTop: 0, fontSize: 28, fontWeight: 800 };
