@@ -86,6 +86,12 @@ const card: React.CSSProperties = {
     gap: 12,
     height: "100%",
 };
+
+const optionStyle: React.CSSProperties = {
+    background: "#181d2f", // Tmavá modrá (plná barva, aby nebyla průhledná)
+    color: "#e6e9ef",
+};
+
 const rowTop: React.CSSProperties = { display: "grid", gap: 6 };
 const evName: React.CSSProperties = { fontWeight: 800, fontSize: 18, margin: 0 };
 const evTime: React.CSSProperties = { fontWeight: 200, fontSize: 14, margin: 0 };
@@ -307,10 +313,10 @@ export default function EventsList() {
                         <div>
                             <label style={label}>Řazení</label>
                             <select style={select} value={sort} onChange={e => setSort(e.target.value as SortKey)}>
-                                <option value="dateAsc">Datum ↑ </option>
-                                <option value="dateDesc">Datum ↓ </option>
-                                <option value="priceAsc">Cena ↑ </option>
-                                <option value="priceDesc">Cena ↓ </option>
+                                <option style={optionStyle} value="dateAsc">Datum ↑ </option>
+                                <option style={optionStyle} value="dateDesc">Datum ↓ </option>
+                                <option style={optionStyle} value="priceAsc">Cena ↑ </option>
+                                <option style={optionStyle} value="priceDesc">Cena ↓ </option>
                             </select>
                         </div>
                     </div>
