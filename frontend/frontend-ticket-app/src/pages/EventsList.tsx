@@ -191,7 +191,8 @@ export default function EventsList() {
             setDateFrom(r.from.slice(0, 10));
             setDateTo(r.to.slice(0, 10));
         } else {
-
+            setDateFrom("");
+            setDateTo("");
         }
         setPage(1);
     }, [quick]);
