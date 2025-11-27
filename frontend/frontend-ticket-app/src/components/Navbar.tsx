@@ -35,32 +35,50 @@ const pill: React.CSSProperties = {
     background: "rgba(255,255,255,.05)",
     color: "#e6e9ef",
     textDecoration: "none",
-    fontSize: 14
+    fontSize: 14,
+    cursor: "pointer"
 };
 
 const primary: React.CSSProperties = {
     ...pill,
     background: "linear-gradient(135deg,#7c3aed,#22d3ee)",
     border: "0",
-    cursor: "pointer",
     fontWeight: 700
 };
 
-// Styl pro košík (volitelně trochu zvýrazněný)
+// Styl pro košík
 const cartLink: React.CSSProperties = {
     ...pill,
     display: "flex",
     alignItems: "center",
     gap: 6,
-    background: "rgba(34, 211, 238, 0.1)", // lehký tint do modra
+    background: "rgba(34, 211, 238, 0.1)",
     borderColor: "rgba(34, 211, 238, 0.3)",
     color: "#22d3ee"
+};
+
+// Styl pro admin tlačítko (odlišené např. do fialova nebo jen pill)
+const adminLink: React.CSSProperties = {
+    ...pill,
+    borderColor: "rgba(124, 58, 237, 0.5)",
+    color: "#c4b5fd"
 };
 
 export default function Navbar() {
     const navigate = useNavigate();
     const location = useLocation();
-    const token = localStorage.getItem("token"); // kontrola přihlášení
+    const token = localStorage.getItem("token");
+
+    // Získání role z tokenu
+    let role: string | null = null;
+    if (token) {
+        try {
+            const payload = JSON.parse(atob(token.split(".")[1]));
+            role = payload.role;
+        } catch { /* empty */ }
+    }
+
+    const isAdmin = role === 'ADMINISTRATOR';
 
     const logout = () => {
         localStorage.removeItem("token");
@@ -80,9 +98,27 @@ export default function Navbar() {
 
             <div style={navLinks}>
                 {!onEventsPage && <Link to="/events" style={pill}>Procházet akce</Link>}
-                {token && <Link to="/user/tickets" style={pill}>Moje vstupenky</Link>}
+
+                {/* Sekce pro ADMINA */}
+                {token && isAdmin && (
+                    <Link to="/admin" style={adminLink}>⚙️ Administrace</Link>
+                )}
+
+                {/* Sekce pro běžného USERA (nebo admina, pokud chce vidět svůj účet, ale ne košík) */}
+
+                {/* Vstupenky vidí jen ten, kdo NENÍ admin */}
+                {token && !isAdmin && (
+                    <Link to="/user/tickets" style={pill}>Moje vstupenky</Link>
+                )}
+
+                {/* Účet vidí všichni přihlášení */}
                 {token && <Link to="/user/account" style={pill}>Účet</Link>}
-                {token && (<Link to="/cart" style={cartLink}>🛒 Košík</Link>)}
+
+                {/* Košík vidí jen ten, kdo NENÍ admin */}
+                {token && !isAdmin && (
+                    <Link to="/cart" style={cartLink}>🛒 Košík</Link>
+                )}
+
                 {token && <button style={primary} onClick={logout} aria-label="Odhlásit se">Odhlásit</button>}
                 {!token && <Link to="/auth/login" style={primary}>Přihlásit</Link>}
             </div>

@@ -35,6 +35,7 @@ public class CartController {
                     "SEATING: pošle {type: 'SEATING', eventId, seatId}.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/items")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<CartDto> addItem(@Valid @RequestBody CartAddItemDto body,
                                            Principal principal) {
         CartDto dto = cartService.addItem(principal.getName(), body);
