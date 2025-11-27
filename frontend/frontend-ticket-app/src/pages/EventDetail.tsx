@@ -57,6 +57,15 @@ export default function EventDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
 
+    const token = localStorage.getItem("token");
+    let isAdmin = false;
+    if (token) {
+        try {
+            const payload = JSON.parse(atob(token.split(".")[1]));
+            isAdmin = payload.role === 'ADMINISTRATOR';
+        } catch { /* empty */ }
+    }
+
     // Data
     const [event, setEvent] = useState<EventDetailDto | null>(null);
     const [loading, setLoading] = useState(true);
@@ -118,6 +127,7 @@ export default function EventDetail() {
 
     // 2. Přidání do košíku
     const handleAddToCart = async (type: "STANDING" | "SEATING") => {
+        if (isAdmin) return;
         const token = localStorage.getItem("token");
         if (!token) {
             navigate("/auth/login", { state: { from: `/events/${id}` } });
@@ -172,6 +182,7 @@ export default function EventDetail() {
 
     // funkce pro přidání označené sedačky do pole (kde jsou místa ke koupi - vybrat jich můžu i víc)
     const toggleSeat = (seatId: number) => {
+        if (isAdmin) return;
         setSelectedSeatIds(prev => {
             if (prev.includes(seatId)) {
                 // Pokud už je vybrané, odebereme ho
@@ -227,7 +238,10 @@ export default function EventDetail() {
                                 return (
                                     <div
                                         key={seat.id}
-                                        style={seatBox(status)}
+                                        style={{
+                                            ...seatBox(status),
+                                            cursor: (isTaken || isAdmin) ? "not-allowed" : "pointer"
+                                        }}
                                         onClick={() => !isTaken && toggleSeat(seat.id)}
                                         title={`Řada ${seat.seatRow}, Místo ${seat.seatNumber}`}
                                     >
@@ -280,15 +294,22 @@ export default function EventDetail() {
                                     type="number" min={1} max={10}
                                     style={inputQty}
                                     value={standingQty} onChange={e => setStandingQty(Number(e.target.value))}
+                                    disabled={isAdmin}
                                 />
                             </div>
 
                             <button
-                                style={{...btnPrimary, marginTop: 0}}
+                                style={{
+                                    ...btnPrimary,
+                                    marginTop: 0,
+                                    opacity: isAdmin ? 0.5 : 1,
+                                    cursor: isAdmin ? "not-allowed" : "pointer",
+                                    filter: isAdmin ? "grayscale(100%)" : "none"
+                                }}
                                 onClick={() => handleAddToCart("STANDING")}
-                                disabled={adding}
+                                disabled={adding || isAdmin}
                             >
-                                {adding ? "Čekejte..." : "Do košíku"}
+                                {isAdmin ? "Admin nemůže nakupovat" : (adding ? "Čekejte..." : "Do košíku")}
                             </button>
                         </div>
                     </div>
@@ -310,17 +331,21 @@ export default function EventDetail() {
                             <button
                                 style={{
                                     ...btnPrimary,
-                                    opacity: selectedSeatIds.length > 0 ? 1 : 0.5,
-                                    cursor: selectedSeatIds.length > 0 ? "pointer" : "not-allowed"
+                                    opacity: (selectedSeatIds.length > 0 && !isAdmin) ? 1 : 0.5,
+                                    cursor: (selectedSeatIds.length > 0 && !isAdmin) ? "pointer" : "not-allowed",
+                                    filter: isAdmin ? "grayscale(100%)" : "none"
                                 }}
-                                disabled={selectedSeatIds.length === 0 || adding}
+                                disabled={selectedSeatIds.length === 0 || adding || isAdmin}
                                 onClick={() => handleAddToCart("SEATING")}
                             >
-                                {adding
-                                    ? "Zpracovávám..."
-                                    : (selectedSeatIds.length > 0
-                                        ? `Koupit ${selectedSeatIds.length} vybraná místa`
-                                        : "Vyberte místa na mapě")
+                                {isAdmin
+                                    ? "Admin nemůže nakupovat"
+                                    : (adding
+                                            ? "Zpracovávám..."
+                                            : (selectedSeatIds.length > 0
+                                                ? `Koupit ${selectedSeatIds.length} vybraná místa`
+                                                : "Vyberte místa na mapě")
+                                    )
                                 }
                             </button>
                         </div>
