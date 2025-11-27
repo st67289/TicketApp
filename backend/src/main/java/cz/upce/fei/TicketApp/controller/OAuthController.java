@@ -24,19 +24,15 @@ public class OAuthController {
     //Pro oauth 2 - Endpoint pro výměnu kódu za JWT
     @PostMapping("/token")
     public ResponseEntity<?> exchangeCode(@RequestBody Map<String, String> body) {
-        System.out.println("Received body: " + body); // DEBUG
         String code = body.get("code");
 
         if (code == null || code.trim().isEmpty()) {
-            System.out.println("Code is null or empty"); // DEBUG
             return ResponseEntity.status(400).body(Map.of("error", "Code is required"));
         }
 
-        System.out.println("Looking for code: " + code); // DEBUG
         String email = shortCodeStore.consumeCode(code);
 
         if (email == null) {
-            System.out.println("Invalid or expired code: " + code); // DEBUG
             return ResponseEntity.status(400).body(Map.of("error", "Invalid or expired code"));
         }
 
@@ -46,7 +42,6 @@ public class OAuthController {
         }
 
         String jwt = jwtService.generateToken(email, user.getRole().name());
-        System.out.println("Generated JWT: " + jwt);
         return ResponseEntity.ok(Map.of(
                 "token", jwt,
                 "role", user.getRole().name()
