@@ -104,12 +104,36 @@ export default function MyTickets() {
         fetchTickets();
     }, []);
 
-    const handleDownloadPdf = (ticketId: number) => {
-        //TODO ZATÍM JEN ALERT - Backend ještě nemáme
-        alert("Stažení PDF pro ticket " + ticketId + " (Backend TODO)");
+    const handleDownloadPdf = async (ticketId: number) => {
+        const token = localStorage.getItem("token");
+        try {
+            // 1. Stáhneme data jako Blob (binary large object)
+            const res = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}/pdf`, {
+                method: "GET",
+                headers: { Authorization: `Bearer ${token}` }
+            });
 
-        // Až bude backend:
-        // window.open(`${BACKEND_URL}/api/tickets/${ticketId}/pdf?token=${localStorage.getItem("token")}`, "_blank");
+            if (!res.ok) throw new Error("Chyba stahování");
+
+            // 2. Vytvoříme z dat URL
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            // 3. Vytvoříme neviditelný odkaz a "klikneme" na něj
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `vstupenka_${ticketId}.pdf`; // Název souboru
+            document.body.appendChild(link);
+            link.click();
+
+            // 4. Úklid
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+        } catch (e) {
+            console.error(e);
+            alert("Nepodařilo se stáhnout PDF.");
+        }
     };
 
     if (loading) return <div style={{...wrap, textAlign: "center", paddingTop: 100}}>Načítám vstupenky...</div>;
