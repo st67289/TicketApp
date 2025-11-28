@@ -111,7 +111,7 @@ export default function CartPage() {
                 });
 
                 if (res.ok) {
-                    alert("Platba proběhla úspěšně!");
+                    alert("Platba proběhla úspěšně!\nVstupenky byly odeslány na váš email a naleznete je také v sekci 'Moje vstupenky'.");
                     navigate("/user/tickets"); // Přesměrování na Moje vstupenky
                 } else {
                     alert("Chyba při zpracování platby.");

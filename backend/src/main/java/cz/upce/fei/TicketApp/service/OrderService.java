@@ -4,6 +4,7 @@ import cz.upce.fei.TicketApp.model.entity.*;
 import cz.upce.fei.TicketApp.model.enums.OrderStatus;
 import cz.upce.fei.TicketApp.model.enums.TicketStatus;
 import cz.upce.fei.TicketApp.repository.*;
+import cz.upce.fei.TicketApp.service.passwordReset.EmailService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -11,7 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +24,8 @@ public class OrderService {
     private final CartRepository cartRepository;
     private final TicketRepository ticketRepository;
     private final OrderRepository orderRepository;
+    private final PdfService pdfService;
+    private final EmailService emailService;
 
     @Transactional
     public Long createOrder(String userEmail) {
@@ -65,6 +70,33 @@ public class OrderService {
         // 7. Aktualizuj košík
         cart.setLastChanged(OffsetDateTime.now());
         cartRepository.save(cart);
+
+        // --- 8. ODESLÁNÍ EMAILU ---
+        // Vygenerujeme PDF pro každý lístek
+        try {
+            Map<String, byte[]> attachments = new HashMap<>();
+
+            for (Ticket t : cartTickets) {
+                byte[] pdfBytes = pdfService.generateTicketPdf(t);
+                String filename = "vstupenka_" + t.getId() + ".pdf";
+                attachments.put(filename, pdfBytes);
+            }
+
+            // Text emailu
+            String subject = "Potvrzení objednávky #" + order.getId();
+            String text = "Dobrý den,\n\nděkujeme za vaši objednávku.\n\n" +
+                    "V příloze naleznete vaše vstupenky ve formátu PDF.\n" +
+                    "Celková cena: " + total + " Kč.\n\n" +
+                    "Přejeme příjemnou zábavu!\nTicketApp Tým";
+
+            // Odeslání (pokud je @Async, neblokuje transakci)
+            emailService.sendTickets(userEmail, subject, text, attachments);
+
+        } catch (Exception e) {
+            // Logujeme chybu, ale nevyhazujeme výjimku, aby se nezrušila objednávka!
+            // Uživatel si lístky může stáhnout i z webu.
+            System.err.println("Nepodařilo se odeslat email se vstupenkami: " + e.getMessage());
+        }
 
         return order.getId();
     }
