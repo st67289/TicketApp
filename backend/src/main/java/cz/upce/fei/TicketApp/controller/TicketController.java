@@ -5,10 +5,14 @@ import cz.upce.fei.TicketApp.dto.ticket.TicketDto;
 import cz.upce.fei.TicketApp.model.entity.Ticket;
 import cz.upce.fei.TicketApp.model.enums.TicketStatus;
 import cz.upce.fei.TicketApp.repository.TicketRepository;
+import cz.upce.fei.TicketApp.service.QrCodeService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,6 +26,7 @@ import java.util.stream.Collectors;
 public class TicketController {
 
     private final TicketRepository ticketRepository;
+    private final QrCodeService qrCodeService;
 
     @GetMapping("/me")
     @PreAuthorize("hasRole('USER')")
@@ -59,5 +64,24 @@ public class TicketController {
                 .seatRow(seat != null ? seat.getSeatRow() : null)
                 .seatNumber(seat != null ? seat.getSeatNumber() : null)
                 .build();
+    }
+
+    @GetMapping(value = "/{id}/qr", produces = MediaType.IMAGE_PNG_VALUE)
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<byte[]> getTicketQr(@PathVariable Long id, Principal principal) {
+        // 1. Najít ticket
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Ticket nenalezen"));
+
+        // 2. Bezpečnostní kontrola: Patří ticket přihlášenému uživateli?
+        // Předpokládám cestu: Ticket -> Order -> AppUser -> Email
+        if (!ticket.getOrder().getAppUser().getEmail().equalsIgnoreCase(principal.getName())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        // 3. Vygenerovat QR z kódu vstupenky (např. T-123456)
+        byte[] qrImage = qrCodeService.generateQrCodeImage(ticket.getTicketCode(), 200, 200);
+
+        return ResponseEntity.ok(qrImage);
     }
 }
