@@ -31,8 +31,8 @@ public class CartController {
     }
 
     @Operation(summary = "Přidá položku do košíku",
-            description = "STANDING: pošle {type: 'STANDING', eventId, quantity}. " +
-                    "SEATING: pošle {type: 'SEATING', eventId, seatId}.",
+            description = "STANDING: pošle {eventId, quantity}. " +
+                    "SEATING: pošle {eventId, seatId}.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/items")
     @PreAuthorize("hasRole('USER')")

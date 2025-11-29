@@ -13,7 +13,9 @@ import java.math.BigDecimal;
         @Index(name = "ix_ticket_cart", columnList = "cart_id"),
         @Index(name = "ix_ticket_order", columnList = "order_id"),
         @Index(name = "ux_ticket_code", columnList = "ticket_code", unique = true)
-})
+}, uniqueConstraints = {
+        @UniqueConstraint(name = "uk_ticket_event_seat", columnNames = {"event_id", "seat_id"})}
+)
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString
@@ -35,9 +37,9 @@ public class Ticket {
     @ToString.Exclude @EqualsAndHashCode.Exclude
     private Seat seat;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "ticket_type", length = 16)
-    private TicketType ticketType;
+//    @Enumerated(EnumType.STRING)
+//    @Column(name = "ticket_type", length = 16)
+//    private TicketType ticketType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cart_id")

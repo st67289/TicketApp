@@ -4,17 +4,17 @@ import cz.upce.fei.TicketApp.dto.cart.CartAddItemDto;
 import cz.upce.fei.TicketApp.dto.cart.CartDto;
 import cz.upce.fei.TicketApp.dto.cart.CartItemDto;
 import cz.upce.fei.TicketApp.dto.common.VenueShortDto;
+import cz.upce.fei.TicketApp.exception.CapacityExceededException;
+import cz.upce.fei.TicketApp.exception.SeatAlreadyTakenException;
 import cz.upce.fei.TicketApp.model.entity.*;
 import cz.upce.fei.TicketApp.model.enums.TicketStatus;
-import cz.upce.fei.TicketApp.model.enums.TicketType;
 import cz.upce.fei.TicketApp.repository.*;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -29,7 +29,6 @@ public class CartService {
     private final SeatRepository seats;
     private final TicketRepository tickets;
     private final CartRepository carts;
-    private final RedissonClient redisson;
 
     // ====== READ ======
     @Transactional(readOnly = true)
@@ -40,6 +39,15 @@ public class CartService {
     }
 
     // ====== ADD ======
+
+    /**
+     * 1 - standing se řeší přes zámek na event id (když někdo dělá cokoliv na eventu 1 a přijde někdo druhej,
+     *    tak se mu ten dotaz zmrazí)
+     * 2 - seating nemá zámek, ale pouze constraint UNIQUE(event_id, seat_id) na úrovni DB,
+     *    který zamezuje přidat více ticketů na jeden seat v eventu
+     *
+     *    všechno je transactional, takže by se to v případě chyby mělo rollbacknout
+     */
     public CartDto addItem(String email, CartAddItemDto dto) {
         AppUser user = users.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new EntityNotFoundException("Uživatel nenalezen: " + email));
@@ -50,12 +58,39 @@ public class CartService {
         Event event = events.findById(dto.getEventId())
                 .orElseThrow(() -> new EntityNotFoundException("Event nenalezen: " + dto.getEventId()));
 
-        // Přepínač podle typu
-        if (dto.getType() == TicketType.SEATING) {
-            return addSeating(email, cart, event, dto.getSeatId());
-        } else {
+        if (dto.getSeatId() == null) {
+
             int qty = dto.getQuantity() == null ? 1 : dto.getQuantity();
+            if (qty <= 0) {
+                throw new IllegalArgumentException("Množství musí být kladné.");
+            }
             return addStanding(cart, event, qty);
+
+        } else {
+            // SEATING
+            try {
+                Seat seat = seats.findById(dto.getSeatId())
+                        .orElseThrow(() -> new EntityNotFoundException("Sedadlo nenalezeno: " + dto.getSeatId()));
+
+                Ticket ticket = Ticket.builder()
+                        .event(event)
+                        .seat(seat)
+                        .cart(cart)
+                        .ticketCode(genCode(event.getId()))
+                        .price(event.getSeatingPrice())
+                        .status(TicketStatus.RESERVED)
+                        .build();
+
+                tickets.save(ticket);
+
+                cart.getTickets().add(ticket);
+                carts.save(cart);
+
+            } catch (DataIntegrityViolationException e) {
+                // UNIQUE constraint na (event_id, seat_id) porušen = sedadlo je obsazeno
+                throw new SeatAlreadyTakenException("Zadané sedadlo je již obsazeno.");
+            }
+            return mapCart(cart);
         }
     }
 
@@ -64,110 +99,59 @@ public class CartService {
         Ticket t = tickets.findByIdAndCartUserEmail(ticketId, email)
                 .orElseThrow(() -> new IllegalArgumentException("Položka košíku nenalezena"));
 
-        // volitelně můžeš jen zrušit:
-        // t.setStatus(TicketStatus.CANCELLED);
-        // tickets.save(t);
-        // nebo smazat (košík obvykle stačí smazat)
         tickets.delete(t);
 
-        // refresh košíku
-        Cart cart = carts.findByUserEmail(email)
-                .orElseThrow();
+        Cart cart = carts.findByUserEmail(email).orElseThrow();
         return mapCart(cart);
     }
 
 
-    private CartDto addSeating(String email, Cart cart, Event event, Long seatId) {
-        if (event.getSeatingPrice() == null) {
-            throw new IllegalArgumentException("Event nemá cenu pro sezení.");
-        }
-        // validace sedadla
-        Seat seat = seats.findById(seatId)
-                .orElseThrow(() -> new EntityNotFoundException("Seat nenalezen: " + seatId));
-        if (!seat.getVenue().getId().equals(event.getVenue().getId())) {
-            throw new IllegalArgumentException("Sedadlo nepatří do venue tohoto eventu.");
-        }
-
-        String lockKey = "lock:seat:" + event.getId() + ":" + seat.getId();
-        RLock lock = redisson.getLock(lockKey);
-        lock.lock();
-        try {
-            // kolize (rezervované/zakoupené)
-            boolean taken = tickets.existsByEventIdAndSeatIdAndStatusIn(
-                    event.getId(),
-                    seat.getId(),
-                    List.of(TicketStatus.RESERVED, TicketStatus.ISSUED, TicketStatus.USED)
-            );
-            if (taken) {
-                throw new IllegalStateException("Sedadlo je již rezervované nebo prodané.");
-            }
-
-            // vytvoř tiket
-            Ticket t = Ticket.builder()
-                    .event(event)
-                    .seat(seat)
-                    .ticketType(TicketType.SEATING)
-                    .cart(cart)
-                    .order(null)
-                    .ticketCode(genCode(event.getId()))
-                    .price(event.getSeatingPrice())
-                    .status(TicketStatus.RESERVED)
-                    .build();
-            tickets.save(t);
-
-            // aktuální košík
-            Cart reloaded = carts.findByUserEmail(email).orElseThrow();
-            return mapCart(reloaded);
-        } finally {
-            lock.unlock();
-        }
-    }
-
+    /**
+     * Privátní metoda pro řešení souběhu (Concurrency)
+     */
     private CartDto addStanding(Cart cart, Event event, int qty) {
-        if (event.getStandingPrice() == null) {
+        Event lockedEvent = events.findByIdWithLock(event.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Event nenalezen při zamykání"));
+
+        if (lockedEvent.getStandingPrice() == null) {
             throw new IllegalArgumentException("Event nemá cenu pro stání.");
         }
-        Integer venueCap = event.getVenue().getStandingCapacity();
+        Integer venueCap = lockedEvent.getVenue().getStandingCapacity();
         int cap = venueCap == null ? 0 : venueCap;
         if (cap <= 0) {
             throw new IllegalArgumentException("Event/venue nemá kapacitu pro stání.");
         }
 
-        String lockKey = "lock:standing:" + event.getId();
-        RLock lock = redisson.getLock(lockKey);
-        lock.lock();
-        try {
-            long alreadyHeld = tickets.countByEventIdAndTicketTypeAndStatusIn(
-                    event.getId(),
-                    TicketType.STANDING,
-                    List.of(TicketStatus.RESERVED, TicketStatus.ISSUED, TicketStatus.USED)
+        long alreadyHeld = tickets.countByEventIdAndStatusIn(
+                lockedEvent.getId(),
+                List.of(TicketStatus.RESERVED, TicketStatus.ISSUED, TicketStatus.USED)
+        );
+
+        long remaining = cap - alreadyHeld;
+        if (remaining < qty) {
+            throw new CapacityExceededException(
+                    "Nedostatečná kapacita pro stání. Požadováno: " + qty + ", Zbývá: " + remaining
             );
-
-            if (alreadyHeld + qty > cap) {
-                throw new IllegalStateException("Nedostatečná kapacita pro stání.");
-            }
-
-            BigDecimal price = event.getStandingPrice();
-            for (int i = 0; i < qty; i++) {
-                Ticket t = Ticket.builder()
-                        .event(event)
-                        .seat(null)
-                        .ticketType(TicketType.STANDING)
-                        .cart(cart)
-                        .order(null)
-                        .ticketCode(genCode(event.getId()))
-                        .price(price)
-                        .status(TicketStatus.RESERVED)
-                        .build();
-                tickets.save(t);
-            }
-
-            Cart reloaded = carts.findById(cart.getId()).orElseThrow();
-            return mapCart(reloaded);
-        } finally {
-            lock.unlock();
         }
+
+        BigDecimal price = lockedEvent.getStandingPrice();
+        for (int i = 0; i < qty; i++) {
+            Ticket t = Ticket.builder()
+                    .event(lockedEvent)
+                    .seat(null)
+                    .cart(cart)
+                    .ticketCode(genCode(lockedEvent.getId()))
+                    .price(price)
+                    .status(TicketStatus.RESERVED)
+                    .build();
+            tickets.save(t);
+        }
+
+        Cart reloaded = carts.findById(cart.getId()).orElseThrow();
+        return mapCart(reloaded);
     }
+
+    // --- Helpers ---
 
     private String genCode(Long eventId) {
         return "E" + eventId + "-" + System.nanoTime();
@@ -220,7 +204,6 @@ public class CartService {
                 .eventName(e.getName())
                 .eventStartTime(e.getStartTime())
                 .venue(venueDto)
-                .ticketType(t.getTicketType())
                 .seatId(s == null ? null : s.getId())
                 .seatRow(s == null ? null : s.getSeatRow())
                 .seatNumber(s == null ? null : s.getSeatNumber())
@@ -250,5 +233,4 @@ public class CartService {
 
         return mapCart(cart);
     }
-
 }

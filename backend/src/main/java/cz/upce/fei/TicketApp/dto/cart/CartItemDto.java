@@ -17,7 +17,6 @@ public class CartItemDto {
     private OffsetDateTime eventStartTime;
     private VenueShortDto venue;
 
-    private TicketType ticketType;
     private Long seatId;        // null pro STANDING
     private String seatRow;     // null pro STANDING
     private String seatNumber;  // null pro STANDING

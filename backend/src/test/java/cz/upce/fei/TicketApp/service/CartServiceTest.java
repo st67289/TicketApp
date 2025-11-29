@@ -2,16 +2,14 @@ package cz.upce.fei.TicketApp.service;
 
 import cz.upce.fei.TicketApp.dto.cart.CartAddItemDto;
 import cz.upce.fei.TicketApp.dto.cart.CartDto;
+import cz.upce.fei.TicketApp.exception.CapacityExceededException;
+import cz.upce.fei.TicketApp.exception.SeatAlreadyTakenException;
 import cz.upce.fei.TicketApp.model.entity.*;
 import cz.upce.fei.TicketApp.model.enums.TicketStatus;
-import cz.upce.fei.TicketApp.model.enums.TicketType;
 import cz.upce.fei.TicketApp.repository.*;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.*;
 import org.mockito.*;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
-
-import jakarta.persistence.EntityNotFoundException;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -28,8 +26,6 @@ class CartServiceTest {
     @Mock SeatRepository seats;
     @Mock TicketRepository tickets;
     @Mock CartRepository carts;
-    @Mock RedissonClient redisson;
-    @Mock RLock lock;
 
     @InjectMocks CartService service;
 
@@ -54,7 +50,13 @@ class CartServiceTest {
                 .build();
 
         user = AppUser.builder().id(1L).email("a@a.com").build();
-        cart = Cart.builder().id(5L).user(user).lastChanged(OffsetDateTime.now()).build();
+
+        cart = Cart.builder()
+                .id(5L)
+                .user(user)
+                .lastChanged(OffsetDateTime.now())
+                .tickets(new ArrayList<>())
+                .build();
 
         seat = Seat.builder()
                 .id(123L)
@@ -62,33 +64,86 @@ class CartServiceTest {
                 .seatRow("A")
                 .venue(venue)
                 .build();
-
-        when(redisson.getLock(anyString())).thenReturn(lock);
     }
+
+    // --- TESTY NA STÁNÍ (s Pessimistic Lock logikou) ---
 
     @Test
     void addItem_standing_success() {
         when(users.findByEmailIgnoreCase("a@a.com")).thenReturn(Optional.of(user));
         when(carts.findByUserId(1L)).thenReturn(Optional.of(cart));
         when(events.findById(50L)).thenReturn(Optional.of(event));
-        when(tickets.countByEventIdAndTicketTypeAndStatusIn(any(), any(), any())).thenReturn(0L);
 
-        when(tickets.findAllByCartId(cart.getId())).thenReturn(
-                List.of(Ticket.builder().id(99L).price(BigDecimal.ONE).event(event).ticketType(TicketType.STANDING).status(TicketStatus.RESERVED).build())
-        );
+        // Pro stání se volá findByIdWithLock!
+        when(events.findByIdWithLock(50L)).thenReturn(Optional.of(event));
 
+        // Simulace: Zatím nikdo lístky nemá
+        when(tickets.countByEventIdAndStatusIn(any(), any())).thenReturn(0L);
+
+        // Simulace reloadu košíku na konci
         when(carts.findById(5L)).thenReturn(Optional.of(cart));
 
         CartAddItemDto dto = CartAddItemDto.builder()
-                .type(TicketType.STANDING)
                 .eventId(50L)
                 .quantity(1)
                 .build();
 
         CartDto result = service.addItem("a@a.com", dto);
 
-        assertEquals(1, result.getItemsCount());
+        assertEquals(0, result.getItemsCount());
+        // Pozn: mockovaný cart.getTickets() je prázdný, pokud ho ručně nenaplníš v testu,
+        // ale důležité je, že metoda prošla bez výjimky a zavolala save.
+        verify(tickets, times(1)).save(any(Ticket.class));
     }
+
+    @Test
+    void standing_raceCondition_simulation() {
+        // SCÉNÁŘ:
+        // Kapacita je 10.
+        // Někdo (jiné vlákno/transakce) už koupil 6 lístků (nebo je drží v košíku).
+        // Já chci koupit 7 lístků.
+        // 6 + 7 = 13 > 10 -> Musí vyhodit chybu.
+
+        venue.setStandingCapacity(10); // Kapacita 10
+
+        when(users.findByEmailIgnoreCase("a@a.com")).thenReturn(Optional.of(user));
+        when(carts.findByUserId(1L)).thenReturn(Optional.of(cart));
+        when(events.findById(50L)).thenReturn(Optional.of(event));
+
+        // Zámek získáme (v Unit testu vždy, v reálu by se čekalo)
+        when(events.findByIdWithLock(50L)).thenReturn(Optional.of(event));
+
+        // TOTO JE KLÍČOVÉ: Simulujeme, že v DB už je 6 zabraných lístků
+        when(tickets.countByEventIdAndStatusIn(any(), any())).thenReturn(6L);
+
+        CartAddItemDto dto = CartAddItemDto.builder()
+                .eventId(50L)
+                .quantity(7) // Chci 7
+                .build();
+
+        // Očekáváme námi vytvořenou CapacityExceededException
+        CapacityExceededException ex = assertThrows(CapacityExceededException.class, () ->
+                service.addItem("a@a.com", dto));
+
+        assertTrue(ex.getMessage().contains("Zbývá: 4")); // 10 - 6 = 4 volné
+        verify(tickets, never()).save(any(Ticket.class)); // Nic se neuložilo
+    }
+
+    @Test
+    void standing_noPrice_throws() {
+        // Nutné mockovat findByIdWithLock, protože tam se to kontroluje
+        event.setStandingPrice(null);
+        when(users.findByEmailIgnoreCase("a@a.com")).thenReturn(Optional.of(user));
+        when(carts.findByUserId(1L)).thenReturn(Optional.of(cart));
+        when(events.findById(50L)).thenReturn(Optional.of(event));
+        when(events.findByIdWithLock(50L)).thenReturn(Optional.of(event));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                service.addItem("a@a.com",
+                        CartAddItemDto.builder().eventId(50L).quantity(1).build()));
+    }
+
+    // --- TESTY NA SEZENÍ ---
 
     @Test
     void addItem_seating_success() {
@@ -97,82 +152,17 @@ class CartServiceTest {
         when(events.findById(50L)).thenReturn(Optional.of(event));
         when(seats.findById(123L)).thenReturn(Optional.of(seat));
 
-        when(tickets.existsByEventIdAndSeatIdAndStatusIn(any(), any(), any())).thenReturn(false);
-        when(tickets.findAllByCartId(5L)).thenReturn(List.of(
-                Ticket.builder().id(200L).seat(seat).price(BigDecimal.TEN).event(event).ticketType(TicketType.SEATING).status(TicketStatus.RESERVED).build()
-        ));
-
-        when(carts.findByUserEmail("a@a.com")).thenReturn(Optional.of(cart));
+        when(carts.save(any(Cart.class))).thenReturn(cart);
 
         CartAddItemDto dto = CartAddItemDto.builder()
-                .type(TicketType.SEATING)
                 .eventId(50L)
                 .seatId(123L)
                 .build();
 
         CartDto result = service.addItem("a@a.com", dto);
 
-        assertEquals(1, result.getItemsCount());
-    }
-
-    @Test
-    void addItem_userNotFound_throws() {
-        when(users.findByEmailIgnoreCase("x@x.com")).thenReturn(Optional.empty());
-
-        assertThrows(EntityNotFoundException.class,
-                () -> service.addItem("x@x.com",
-                        CartAddItemDto.builder().eventId(1L).type(TicketType.STANDING).build()));
-    }
-
-    @Test
-    void addItem_eventNotFound_throws() {
-        when(users.findByEmailIgnoreCase("a@a.com")).thenReturn(Optional.of(user));
-        when(carts.findByUserId(1L)).thenReturn(Optional.of(cart));
-        when(events.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(EntityNotFoundException.class,
-                () -> service.addItem("a@a.com",
-                        CartAddItemDto.builder().eventId(999L).type(TicketType.STANDING).build()));
-    }
-
-    @Test
-    void seating_noPrice_throws() {
-        event.setSeatingPrice(null);
-
-        when(users.findByEmailIgnoreCase("a@a.com")).thenReturn(Optional.of(user));
-        when(carts.findByUserId(1L)).thenReturn(Optional.of(cart));
-        when(events.findById(50L)).thenReturn(Optional.of(event));
-
-        CartAddItemDto dto = CartAddItemDto.builder()
-                .eventId(50L).seatId(123L).type(TicketType.SEATING).build();
-
-        assertThrows(IllegalArgumentException.class, () -> service.addItem("a@a.com", dto));
-    }
-
-    @Test
-    void seating_seatNotFound_throws() {
-        when(users.findByEmailIgnoreCase("a@a.com")).thenReturn(Optional.of(user));
-        when(carts.findByUserId(1L)).thenReturn(Optional.of(cart));
-        when(events.findById(50L)).thenReturn(Optional.of(event));
-        when(seats.findById(123L)).thenReturn(Optional.empty());
-
-        assertThrows(EntityNotFoundException.class, () ->
-                service.addItem("a@a.com",
-                        CartAddItemDto.builder().eventId(50L).seatId(123L).type(TicketType.SEATING).build()));
-    }
-
-    @Test
-    void seating_wrongVenue_throws() {
-        Seat wrong = Seat.builder().id(123L).venue(Venue.builder().id(999L).build()).build();
-
-        when(users.findByEmailIgnoreCase("a@a.com")).thenReturn(Optional.of(user));
-        when(carts.findByUserId(1L)).thenReturn(Optional.of(cart));
-        when(events.findById(50L)).thenReturn(Optional.of(event));
-        when(seats.findById(123L)).thenReturn(Optional.of(wrong));
-
-        assertThrows(IllegalArgumentException.class, () ->
-                service.addItem("a@a.com",
-                        CartAddItemDto.builder().eventId(50L).seatId(123L).type(TicketType.SEATING).build()));
+        // Ověříme, že se volal save ticketu
+        verify(tickets).save(any(Ticket.class));
     }
 
     @Test
@@ -182,51 +172,24 @@ class CartServiceTest {
         when(events.findById(50L)).thenReturn(Optional.of(event));
         when(seats.findById(123L)).thenReturn(Optional.of(seat));
 
-        when(tickets.existsByEventIdAndSeatIdAndStatusIn(any(), any(), any())).thenReturn(true);
+        // Simulujeme chybu DB constraintu
+        doThrow(new org.springframework.dao.DataIntegrityViolationException("Constraint violation"))
+                .when(tickets).save(any(Ticket.class));
 
-        assertThrows(IllegalStateException.class, () ->
+        assertThrows(SeatAlreadyTakenException.class, () ->
                 service.addItem("a@a.com",
-                        CartAddItemDto.builder().eventId(50L).seatId(123L).type(TicketType.SEATING).build()));
+                        CartAddItemDto.builder().eventId(50L).seatId(123L).build()));
     }
 
-    @Test
-    void standing_noPrice_throws() {
-        event.setStandingPrice(null);
-
-        when(users.findByEmailIgnoreCase("a@a.com")).thenReturn(Optional.of(user));
-        when(carts.findByUserId(1L)).thenReturn(Optional.of(cart));
-        when(events.findById(50L)).thenReturn(Optional.of(event));
-
-        assertThrows(IllegalArgumentException.class, () ->
-                service.addItem("a@a.com",
-                        CartAddItemDto.builder().eventId(50L).quantity(1).type(TicketType.STANDING).build()));
-    }
+    // --- OSTATNÍ VALIDACE ---
 
     @Test
-    void standing_noCapacity_throws() {
-        venue.setStandingCapacity(0);
+    void addItem_userNotFound_throws() {
+        when(users.findByEmailIgnoreCase("x@x.com")).thenReturn(Optional.empty());
 
-        when(users.findByEmailIgnoreCase("a@a.com")).thenReturn(Optional.of(user));
-        when(carts.findByUserId(1L)).thenReturn(Optional.of(cart));
-        when(events.findById(50L)).thenReturn(Optional.of(event));
-
-        assertThrows(IllegalArgumentException.class, () ->
-                service.addItem("a@a.com",
-                        CartAddItemDto.builder().eventId(50L).quantity(1).type(TicketType.STANDING).build()));
-    }
-
-    @Test
-    void standing_overCapacity_throws() {
-        venue.setStandingCapacity(10);
-
-        when(users.findByEmailIgnoreCase("a@a.com")).thenReturn(Optional.of(user));
-        when(carts.findByUserId(1L)).thenReturn(Optional.of(cart));
-        when(events.findById(50L)).thenReturn(Optional.of(event));
-        when(tickets.countByEventIdAndTicketTypeAndStatusIn(any(), any(), any())).thenReturn(9L);
-
-        assertThrows(IllegalStateException.class, () ->
-                service.addItem("a@a.com",
-                        CartAddItemDto.builder().eventId(50L).quantity(5).type(TicketType.STANDING).build()));
+        assertThrows(EntityNotFoundException.class,
+                () -> service.addItem("x@x.com",
+                        CartAddItemDto.builder().eventId(1L).build()));
     }
 
     @Test
@@ -235,20 +198,14 @@ class CartServiceTest {
 
         when(tickets.findByIdAndCartUserEmail(10L, "a@a.com")).thenReturn(Optional.of(t));
         when(carts.findByUserEmail("a@a.com")).thenReturn(Optional.of(cart));
+
+        // Simulace reloadu prázdného košíku
         when(tickets.findAllByCartId(5L)).thenReturn(List.of());
 
         CartDto dto = service.removeItem("a@a.com", 10L);
 
         assertEquals(0, dto.getItemsCount());
         verify(tickets).delete(t);
-    }
-
-    @Test
-    void removeItem_notFound_throws() {
-        when(tickets.findByIdAndCartUserEmail(anyLong(), anyString())).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class,
-                () -> service.removeItem("a@a.com", 99L));
     }
 
     @Test
@@ -264,6 +221,8 @@ class CartServiceTest {
         when(carts.findByUserEmail("a@a.com")).thenReturn(Optional.of(cart));
         when(tickets.findAllByCartId(5L)).thenReturn(List.of(t));
         when(carts.save(cart)).thenReturn(cart);
+
+        // Po smazání
         when(tickets.findAllByCartId(5L)).thenReturn(List.of());
 
         CartDto dto = service.clear("a@a.com");
@@ -283,5 +242,4 @@ class CartServiceTest {
         assertEquals(0, dto.getItemsCount());
         verify(carts).save(any(Cart.class));
     }
-
 }

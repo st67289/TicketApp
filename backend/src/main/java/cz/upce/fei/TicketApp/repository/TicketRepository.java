@@ -3,8 +3,11 @@ package cz.upce.fei.TicketApp.repository;
 import cz.upce.fei.TicketApp.model.entity.Ticket;
 import cz.upce.fei.TicketApp.model.enums.TicketStatus;
 import cz.upce.fei.TicketApp.model.enums.TicketType;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
@@ -28,11 +31,6 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     Optional<Ticket> findByTicketCode(String ticketCode);
 
     long countByEventIdAndSeatId(Long eventId, Long seatId);
-
-    // Kolik je u eventu držených/prodaných STANDING lístků
-    long countByEventIdAndTicketTypeAndStatusIn(Long eventId,
-                                                TicketType ticketType,
-                                                Collection<TicketStatus> statuses);
 
     // Kolik lístků je v některém z daných stavů
     long countByEventIdAndStatusIn(Long eventId, Collection<TicketStatus> statuses);

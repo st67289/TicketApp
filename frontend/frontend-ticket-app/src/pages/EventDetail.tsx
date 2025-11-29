@@ -21,7 +21,6 @@ const seatBox = (status: "free" | "taken" | "selected"): React.CSSProperties => 
     display: "flex", alignItems: "center", justifyContent: "center",
     fontSize: 11, fontWeight: 700,
     cursor: status === "taken" ? "not-allowed" : "pointer",
-    // Barvy: Taken = tmavá šedá, Selected = tyrkysová, Free = průhledná s rámečkem
     background: status === "taken" ? "#333" : (status === "selected" ? "#22d3ee" : "rgba(255,255,255,0.05)"),
     color: status === "selected" ? "#000" : (status === "taken" ? "#555" : "#fff"),
     border: status === "selected" ? "0" : (status === "taken" ? "1px solid #333" : "1px solid rgba(255,255,255,0.2)"),
@@ -48,9 +47,7 @@ type EventDetailDto = {
     seatingPrice?: number;
     description?: string;
 };
-// Fyzické sedadlo z DB
 type SeatDto = { id: number; seatRow: string; seatNumber: string };
-// Řada z JSON plánku
 type PlanRow = { label: string; count: number };
 
 export default function EventDetail() {
@@ -72,8 +69,8 @@ export default function EventDetail() {
     const [error, setError] = useState("");
 
     // Stav pro mapu sezení
-    const [venueSeats, setVenueSeats] = useState<SeatDto[]>([]); // Všechna sedadla
-    const [occupiedIds, setOccupiedIds] = useState<number[]>([]); // Obsazená ID
+    const [venueSeats, setVenueSeats] = useState<SeatDto[]>([]);
+    const [occupiedIds, setOccupiedIds] = useState<number[]>([]);
     const [selectedSeatIds, setSelectedSeatIds] = useState<number[]>([]);
 
     // Stav pro stání
@@ -93,18 +90,13 @@ export default function EventDetail() {
             setLoading(true);
             setError("");
 
-            // A) Načíst detail eventu
             const resEv = await fetch(`${BACKEND_URL}/api/events/${id}`);
             if (!resEv.ok) throw new Error("Akce nenalezena nebo nelze načíst.");
             const evData: EventDetailDto = await resEv.json();
             setEvent(evData);
 
-            // B) Pokud je to akce na SEZENÍ, načíst mapu a obsazenost
             if (evData.seatingPrice) {
-                // 1. Stáhnout seznam fyzických sedadel pro Venue (z VenueControlleru)
                 const resSeats = await fetch(`${BACKEND_URL}/api/venues/${evData.venue.id}/seats`);
-
-                // 2. Stáhnout seznam ID obsazených sedadel (z EventControlleru)
                 const resOcc = await fetch(`${BACKEND_URL}/api/events/${id}/occupied-seats`);
 
                 if (resSeats.ok && resOcc.ok) {
@@ -125,8 +117,8 @@ export default function EventDetail() {
         }
     };
 
-    // 2. Přidání do košíku
-    const handleAddToCart = async (type: "STANDING" | "SEATING") => {
+    // 2. Přidání do košíku (UPRAVENO PRO NOVÉ DTO)
+    const handleAddToCart = async (actionType: "STANDING" | "SEATING") => {
         if (isAdmin) return;
         const token = localStorage.getItem("token");
         if (!token) {
@@ -134,61 +126,82 @@ export default function EventDetail() {
             return;
         }
 
-        // Validace před odesláním
-        if (type === "SEATING" && selectedSeatIds.length === 0) return;
+        if (actionType === "SEATING" && selectedSeatIds.length === 0) return;
 
         setAdding(true);
         try {
-            if (type === "STANDING") {
-                // Stání pošleme jednou (tam je quantity)
+            if (actionType === "STANDING") {
+                // === STÁNÍ ===
+                // Posíláme: eventId + quantity
+                // seatId neposíláme (nebo null), backend to podle toho pozná
                 const res = await fetch(`${BACKEND_URL}/api/carts/items`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                    body: JSON.stringify({ type: "STANDING", eventId: event?.id, quantity: standingQty })
+                    body: JSON.stringify({
+                        eventId: event?.id,
+                        quantity: standingQty
+                    })
                 });
-                if (!res.ok) throw new Error("Chyba při stání");
+
+                if (!res.ok) {
+                    const errJson = await res.json();
+                    throw new Error(errJson.detail || "Chyba při přidávání lístků na stání.");
+                }
 
             } else {
-                // Sezení: Musíme poslat request pro každé vybrané sedadlo zvlášť
-                // Použijeme Promise.all, aby se to poslalo paralelně (rychleji)
+                // === SEZENÍ ===
+                // Musíme poslat request pro každé sedadlo zvlášť.
+                // Posíláme: eventId + seatId
+                // quantity vynecháme (backend si defaultne na 1, ale u sezení je to jedno)
+
                 const requests = selectedSeatIds.map(seatId =>
                     fetch(`${BACKEND_URL}/api/carts/items`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                        body: JSON.stringify({ type: "SEATING", eventId: event?.id, seatId: seatId })
+                        body: JSON.stringify({
+                            eventId: event?.id,
+                            seatId: seatId
+                            // type: "SEATING" už neposíláme
+                        })
                     })
                 );
 
                 const responses = await Promise.all(requests);
 
-                // Zkontrolujeme, jestli všechny prošly
                 const failed = responses.some(r => !r.ok);
                 if (failed) {
-                    alert("Některá sedadla se nepodařilo přidat (možná je někdo právě vyfoukl).");
-                    loadData(); // Přenačteme mapu
-                    // I tak ale přesměrujeme do košíku s tím, co se povedlo
+                    const firstError = responses.find(r => !r.ok);
+                    let msg = "Některá sedadla se nepodařilo přidat.";
+                    if(firstError) {
+                        try {
+                            const json = await firstError.json();
+                            if(json.detail) msg = json.detail;
+                        } catch {}
+                    }
+                    alert(msg);
+                    loadData();
                 }
             }
 
             navigate("/cart");
 
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
-            alert("Chyba komunikace se serverem.");
+            if (e instanceof Error) {
+                alert(e.message);
+            } else {
+                alert("Chyba komunikace se serverem.");
+            }
         } finally {
             setAdding(false);
         }
     };
 
-    // funkce pro přidání označené sedačky do pole (kde jsou místa ke koupi - vybrat jich můžu i víc)
     const toggleSeat = (seatId: number) => {
         if (isAdmin) return;
         setSelectedSeatIds(prev => {
             if (prev.includes(seatId)) {
-                // Pokud už je vybrané, odebereme ho
                 return prev.filter(id => id !== seatId);
             } else {
-                // Jinak ho přidáme (můžeš zde dát limit, např. max 6 lístků)
                 if (prev.length >= 6) {
                     alert("Můžete vybrat maximálně 6 sedadel.");
                     return prev;
@@ -212,24 +225,18 @@ export default function EventDetail() {
 
         return (
             <div style={mapWrapper}>
-                {/* Podium */}
                 <div style={{width: "60%", height: 30, background: "#333", borderRadius: "0 0 30px 30px", marginBottom: 20, textAlign: "center", lineHeight: "30px", fontSize: 11, color: "#666", letterSpacing: 2}}>PODIUM</div>
 
                 {rowsDef.map((rowDef, i) => {
-                    // Najdeme fyzická sedadla pro tuto řadu "A", "B"...
                     const rowSeats = venueSeats
                         .filter(s => s.seatRow === rowDef.label)
-                        // Seřadíme je podle čísla (seatNumber může být string, tak parsujeme na int)
                         .sort((a, b) => parseInt(a.seatNumber) - parseInt(b.seatNumber));
 
-                    if (rowSeats.length === 0) return null; // Pokud řada v DB neexistuje, přeskočit
+                    if (rowSeats.length === 0) return null;
 
                     return (
                         <div key={i} style={rowFlex}>
-                            {/* Label řady */}
                             <div style={{width: 20, textAlign: "center", lineHeight: "32px", fontSize: 12, color: "#666"}}>{rowDef.label}</div>
-
-                            {/* Sedadla */}
                             {rowSeats.map(seat => {
                                 const isTaken = occupiedIds.includes(seat.id);
                                 const isSelected = selectedSeatIds.includes(seat.id);
@@ -253,7 +260,6 @@ export default function EventDetail() {
                     );
                 })}
 
-                {/* Legenda */}
                 <div style={{display: "flex", gap: 20, marginTop: 20, fontSize: 12, color: "#aaa"}}>
                     <div style={{display: "flex", alignItems: "center", gap: 6}}><div style={seatBox("free")}></div> Volné</div>
                     <div style={{display: "flex", alignItems: "center", gap: 6}}><div style={seatBox("taken")}></div> Obsazené</div>
@@ -271,7 +277,6 @@ export default function EventDetail() {
             <Navbar />
 
             <div style={container}>
-                {/* 1. HLAVIČKA */}
                 <div style={panel}>
                     <h1 style={h1}>{event.name}</h1>
                     <div style={meta}>
@@ -281,7 +286,6 @@ export default function EventDetail() {
                     <p style={{lineHeight: 1.6, color: "#cfd6e4"}}>{event.description || "Bez popisu"}</p>
                 </div>
 
-                {/* 2. VSTUPENKY NA STÁNÍ (pokud existují) */}
                 {event.standingPrice && (
                     <div style={panel}>
                         <h2 style={{marginTop: 0, fontSize: 20}}>Vstupenky na stání</h2>
@@ -315,7 +319,6 @@ export default function EventDetail() {
                     </div>
                 )}
 
-                {/* 3. VSTUPENKY NA SEZENÍ (pokud existují) */}
                 {event.seatingPrice && (
                     <div style={panel}>
                         <h2 style={{marginTop: 0, fontSize: 20}}>Vstupenky na sezení</h2>
@@ -323,10 +326,8 @@ export default function EventDetail() {
                             Vyberte místo na plánku sálu. Cena: <strong style={{color: "#fff"}}>{event.seatingPrice} Kč</strong>
                         </p>
 
-                        {/* MAPA */}
                         {renderMap()}
 
-                        {/* TLAČÍTKO AKCE */}
                         <div style={{textAlign: "right", marginTop: 20}}>
                             <button
                                 style={{

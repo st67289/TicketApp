@@ -59,7 +59,6 @@ public class TicketController {
                 .id(t.getId())
                 .ticketCode(t.getTicketCode())
                 .price(t.getPrice())
-                .type(t.getTicketType())
                 .status(t.getStatus())
                 .eventName(event.getName())
                 .eventStart(event.getStartTime())

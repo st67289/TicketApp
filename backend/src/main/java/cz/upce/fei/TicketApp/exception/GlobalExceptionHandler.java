@@ -33,6 +33,23 @@ public class GlobalExceptionHandler {
         return pd;
     }
 
+    @ExceptionHandler(CapacityExceededException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ProblemDetail handleCapacityExceeded(CapacityExceededException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        pd.setTitle("Kapacita vyčerpána");
+        pd.setType(URI.create("https://http.dev/409"));
+        return pd;
+    }
+    @ExceptionHandler(SeatAlreadyTakenException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ProblemDetail handleSeatTaken(SeatAlreadyTakenException ex) {
+        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        pd.setTitle("Sedadlo již obsazeno");
+        pd.setType(URI.create("https://http.dev/409"));
+        return pd;
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
