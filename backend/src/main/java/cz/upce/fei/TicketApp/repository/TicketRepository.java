@@ -19,6 +19,8 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     @EntityGraph(attributePaths = {"event","event.venue","seat"})
     List<Ticket> findAllByCartId(Long cartId);
 
+    List<Ticket> findAllByEventIdAndSeatIdIn(Long eventId, Collection<Long> seatIds);
+
     List<Ticket> findAllByOrderId(Long orderId);
 
     // Pro bezpečné mazání položky jen ze svého košíku

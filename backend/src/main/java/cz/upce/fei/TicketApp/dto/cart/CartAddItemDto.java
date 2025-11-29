@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.AssertTrue;
 import lombok.*;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,7 +23,6 @@ public class CartAddItemDto {
     private Integer quantity;
 
     // pro SEATING
-    @Positive
-    private Long seatId;
+    private List<Long> seatIds;
 
 }
