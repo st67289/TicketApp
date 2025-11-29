@@ -1,6 +1,7 @@
 package cz.upce.fei.TicketApp.controller;
 
 import cz.upce.fei.TicketApp.dto.common.SeatDto;
+import cz.upce.fei.TicketApp.dto.venue.VenueDto;
 import cz.upce.fei.TicketApp.service.VenueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,5 +23,10 @@ public class VenueController {
     @GetMapping("/{id}/seats")
     public ResponseEntity<List<SeatDto>> getVenueSeats(@PathVariable Long id) {
         return ResponseEntity.ok(venueService.getSeatsByVenueId(id));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<VenueDto>> getAllVenues() {
+        return ResponseEntity.ok(venueService.findAll());
     }
 }

@@ -26,7 +26,7 @@ const panel: React.CSSProperties = {
 
 const filtersGrid: React.CSSProperties = {
     display: "grid",
-    gridTemplateColumns: "1.6fr 1fr 1fr 1fr auto",
+    gridTemplateColumns: "1.4fr 1.2fr 1fr 1fr 1fr auto",
     gap: 12,
     alignItems: "end",
 };
@@ -88,7 +88,7 @@ const card: React.CSSProperties = {
 };
 
 const optionStyle: React.CSSProperties = {
-    background: "#181d2f", // Tmavá modrá (plná barva, aby nebyla průhledná)
+    background: "#181d2f",
     color: "#e6e9ef",
 };
 
@@ -171,10 +171,11 @@ export default function EventsList() {
 
     // filtry
     const [q, setQ] = useState("");
+    const [venueId, setVenueId] = useState<string>("");
     const [dateFrom, setDateFrom] = useState("");
     const [dateTo, setDateTo] = useState("");
     const [priceMax, setPriceMax] = useState<string>("");
-    const [quick, setQuick] = useState<QuickRange>("none"); // nový rychlý filtr
+    const [quick, setQuick] = useState<QuickRange>("none");
 
     const [sort, setSort] = useState<SortKey>("dateAsc");
 
@@ -186,6 +187,19 @@ export default function EventsList() {
     const [loading, setLoading] = useState(true);
     const [pageData, setPageData] = useState<PageResp<EventListDto> | null>(null);
     const [error, setError] = useState<string>("");
+
+    // seznam míst
+    const [venues, setVenues] = useState<VenueShort[]>([]);
+
+    useEffect(() => {
+        fetch(`${BACKEND_URL}/api/venues`)
+            .then(res => {
+                if (!res.ok) throw new Error("Chyba načítání venues");
+                return res.json();
+            })
+            .then(data => setVenues(data))
+            .catch(console.error);
+    }, []);
 
     useEffect(() => {
         if (quick === "week") {
@@ -216,6 +230,8 @@ export default function EventsList() {
             const params = new URLSearchParams();
             if (q.trim()) params.set("q", q.trim());
 
+            if (venueId) params.set("venueId", venueId);
+
             if (dateFrom) params.set("from", `${dateFrom}T00:00:00Z`);
             if (dateTo)   params.set("to",   `${dateTo}T23:59:59Z`);
 
@@ -229,8 +245,13 @@ export default function EventsList() {
             const data: PageResp<EventListDto> = await res.json();
             setPageData(data);
             if (data.totalPages > 0 && page > data.totalPages) setPage(data.totalPages);
-        } catch (e: any) {
-            setError(e?.message || "Chyba při načítání");
+        } catch (e) {
+            // OPRAVA: Odstraněno :any, přidána typová kontrola
+            if (e instanceof Error) {
+                setError(e.message);
+            } else {
+                setError("Chyba při načítání");
+            }
             setPageData(null);
         } finally {
             setLoading(false);
@@ -240,9 +261,9 @@ export default function EventsList() {
     useEffect(() => {
         load();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [q, dateFrom, dateTo, priceMax, page, pageSize, backendSort]);
+    }, [q, dateFrom, dateTo, priceMax, venueId, page, pageSize, backendSort]);
 
-    useEffect(() => { setPage(1); }, [q, dateFrom, dateTo, priceMax, sort]);
+    useEffect(() => { setPage(1); }, [q, dateFrom, dateTo, priceMax, venueId, sort]);
 
     // FE price sort uvnitř stránky:
     const contentSorted = useMemo(() => {
@@ -262,6 +283,7 @@ export default function EventsList() {
         setDateFrom("");
         setDateTo("");
         setPriceMax("");
+        setVenueId("");
         setQuick("none");
         setSort("dateAsc");
     }
@@ -296,6 +318,16 @@ export default function EventsList() {
                         </div>
 
                         <div>
+                            <label style={label}>Místo konání</label>
+                            <select style={select} value={venueId} onChange={e => setVenueId(e.target.value)}>
+                                <option style={optionStyle} value="">Všechna místa</option>
+                                {venues.map(v => (
+                                    <option key={v.id} style={optionStyle} value={v.id}>{v.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
                             <label style={label}>Datum od</label>
                             <input style={{ ...input, opacity: disableDateInputs ? .6 : 1 }} type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} disabled={disableDateInputs} />
                         </div>
@@ -321,7 +353,7 @@ export default function EventsList() {
                         </div>
                     </div>
 
-                    {/* RYCHLÉ OBDOBÍ – radio, nelze vybrat současně */}
+                    {/* RYCHLÉ OBDOBÍ */}
                     <div style={rowBetween}>
                         <div style={radioRow}>
                             <label style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -373,7 +405,6 @@ export default function EventsList() {
 
                             {contentSorted.map(e => (
                                 <article key={e.id} style={card}>
-                                    {/* header */}
                                     <div style={rowTop}>
                                         <h2 style={evName}>{e.name}</h2>
                                         <h3 style={evTime}>{formatDate(e.startTime)}</h3>
