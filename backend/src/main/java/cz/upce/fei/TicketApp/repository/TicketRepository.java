@@ -55,4 +55,18 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     // Pro košík (pokud už tam nemáš ten EntityGraph, hodí se)
 //    @EntityGraph(attributePaths = {"event", "event.venue", "seat"})
 //    List<Ticket> findAllByCartId(Long cartId);
+
+    @Query(value = """
+        SELECT 
+            CAST(o.created_at AS DATE) as saleDate,
+            SUM(CASE WHEN t.seat_id IS NOT NULL THEN 1 ELSE 0 END) as seating,
+            SUM(CASE WHEN t.seat_id IS NULL THEN 1 ELSE 0 END) as standing
+        FROM tickets t
+        JOIN orders o ON t.order_id = o.order_id
+        WHERE t.event_id = :eventId
+          AND t.status IN ('ISSUED', 'USED') -- Pouze zaplacené
+        GROUP BY CAST(o.created_at AS DATE)
+        ORDER BY saleDate ASC
+    """, nativeQuery = true)
+    List<Object[]> getSalesStatsByEventId(Long eventId);
 }

@@ -3,7 +3,8 @@ import { useState } from "react";
 import Navbar from "../components/Navbar";
 import AdminUsers from "./AdminUsers";
 import AdminVenues from "./AdminVenues";
-import AdminEvents from "./AdminEvents.tsx"; // Importujeme novou komponentu
+import AdminEvents from "./AdminEvents.tsx";
+import AdminStats from "./AdminStats";
 
 // Styly
 const wrap: React.CSSProperties = {
@@ -44,7 +45,7 @@ const activeTabButton: React.CSSProperties = {
 };
 
 
-type AdminTab = 'users' | 'venues' | 'events';
+type AdminTab = 'users' | 'venues' | 'events' | 'stats';
 
 export default function AdminHome() {
     const [activeTab, setActiveTab] = useState<AdminTab>('users');
@@ -57,6 +58,8 @@ export default function AdminHome() {
                 return <AdminVenues />;
             case 'events':
                 return <AdminEvents />;
+            case 'stats':
+                return <AdminStats />;
             default:
                 return null;
         }
@@ -67,6 +70,7 @@ export default function AdminHome() {
             case 'users': return "Správa uživatelů";
             case 'venues': return "Správa míst konání";
             case 'events': return "Správa kulturních akcí";
+            case 'stats': return "Sledování prodejů";
             default: return "Administrace";
         }
     }
@@ -88,6 +92,9 @@ export default function AdminHome() {
                         </button>
                         <button style={activeTab === 'events' ? activeTabButton : tabButton} onClick={() => setActiveTab('events')}>
                             Akce
+                        </button>
+                        <button style={activeTab === 'stats' ? activeTabButton : tabButton} onClick={() => setActiveTab('stats')}>
+                            📊 Prodeje
                         </button>
                     </div>
 
