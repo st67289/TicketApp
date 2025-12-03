@@ -17,6 +17,21 @@ const btnPay: React.CSSProperties = { width: "100%", padding: "16px", borderRadi
 
 const btnClear: React.CSSProperties = { background: "rgba(239, 68, 68, 0.1)", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 13, fontWeight: 700 };
 
+const btnHistory: React.CSSProperties = {
+    display: "block",
+    width: "100%",
+    marginBottom: 16,
+    padding: "12px",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px dashed rgba(255,255,255,0.2)",
+    borderRadius: 12,
+    color: "#a7b0c0",
+    textAlign: "center",
+    textDecoration: "none",
+    fontSize: 14,
+    cursor: "pointer"
+};
+
 const BACKEND_URL = "http://localhost:8080";
 
 interface VenueShort { id: number; name: string; address?: string; }
@@ -122,6 +137,9 @@ export default function CartPage() {
             <Navbar />
 
             <div style={container}>
+                <Link to="/user/orders" style={btnHistory}>
+                    📜 Zobrazit historii objednávek
+                </Link>
                 <div style={panel}>
                     <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20}}>
                         <h1 style={{margin: 0, fontSize: 28, fontWeight: 800}}>Nákupní košík</h1>

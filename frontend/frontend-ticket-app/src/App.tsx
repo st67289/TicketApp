@@ -14,6 +14,7 @@ import Profile from "./user/Profile.tsx";
 import CartPage from "./pages/CartPage.tsx";
 import EventDetail from "./pages/EventDetail.tsx";
 import MyTickets from "./pages/MyTickets.tsx";
+import MyOrders from "./pages/MyOrders.tsx";
 
 function EventDetailPlaceholder() { return <div style={{padding:24,color:"#e6e9ef",background:"#0b0f1a",minHeight:"100vh"}}>Detail eventu – bude později 🙂</div> }
 
@@ -64,6 +65,8 @@ function App() {
 
             <Route path="/events" element={<EventsList />} />
             <Route path="/events/:id" element={<EventDetailPlaceholder />} />
+
+            <Route path="/user/orders" element={<RequireRole allowed="USER"><MyOrders /></RequireRole>} />
 
             <Route path="/user/account" element={<Profile />}/>
             <Route path="/error/:code" element={<ErrorPage />} />

@@ -1,5 +1,7 @@
 package cz.upce.fei.TicketApp.service;
 
+import cz.upce.fei.TicketApp.dto.order.OrderDto;
+import cz.upce.fei.TicketApp.dto.order.OrderItemDto;
 import cz.upce.fei.TicketApp.model.entity.*;
 import cz.upce.fei.TicketApp.model.enums.OrderStatus;
 import cz.upce.fei.TicketApp.model.enums.TicketStatus;
@@ -12,9 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -99,5 +103,39 @@ public class OrderService {
         }
 
         return order.getId();
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderDto> getMyOrders(String email) {
+        AppUser user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new EntityNotFoundException("Uživatel nenalezen"));
+
+        return orderRepository.findAllByAppUserId(user.getId()).stream()
+                // Seřadíme od nejnovější
+                .sorted(Comparator.comparing(Order::getCreatedAt).reversed())
+                .map(this::toOrderDto)
+                .collect(Collectors.toList());
+    }
+
+    private OrderDto toOrderDto(Order order) {
+        List<OrderItemDto> items = order.getTickets().stream()
+                .map(t -> OrderItemDto.builder()
+                        .eventName(t.getEvent().getName())
+                        .venueName(t.getEvent().getVenue().getName())
+                        .price(t.getPrice())
+                        .type(t.getSeat() == null
+                                ? "Na stání"
+                                : String.format("Řada %s, Místo %s", t.getSeat().getSeatRow(), t.getSeat().getSeatNumber()))
+                        .build())
+                .collect(Collectors.toList());
+
+        return OrderDto.builder()
+                .id(order.getId())
+                .createdAt(order.getCreatedAt())
+                .totalPrice(order.getTotalPrice())
+                .status(order.getPaymentStatus())
+                .ticketCount(items.size())
+                .items(items)
+                .build();
     }
 }
