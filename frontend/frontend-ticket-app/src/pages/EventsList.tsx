@@ -299,10 +299,9 @@ export default function EventsList() {
                 <div style={{ ...panel, padding: 0, marginBottom: 14 }}>
                     <HeroSlider
                         slides={[
-                            { image: "https://images.unsplash.com/photo-1506157786151-b8491531f063?q=80&w=1200&auto=format&fit=crop", title: "Top koncerty v listopadu", subtitle: "Projeď si, co se chystá", ctaText: "Prohlédnout", to: "/events" },
-                            { image: "https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?q=80&w=1200&auto=format&fit=crop", title: "Divadlo • premiéry", subtitle: "Nové kusy tento měsíc", ctaText: "Mrkni", to: "/events" },
-                            { image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop", title: "Sportovní zážitky", subtitle: "Lístky od pár stovek", ctaText: "Zobrazit", to: "/events" },
-                            { image: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=1200&auto=format&fit=crop", title: "Open-air akce", subtitle: "Až to počasí dovolí 😉", ctaText: "Přehled", to: "/events" },
+                            { image: "https://images.unsplash.com/photo-1506157786151-b8491531f063?q=80&w=1200&auto=format&fit=crop", title: "Top koncerty", subtitle: "Projeď si, co se chystá", ctaText: "Prohlédnout", to: "#seznam-akci" },
+                            { image: "https://images.unsplash.com/photo-1483412033650-1015ddeb83d1?q=80&w=1200&auto=format&fit=crop", title: "Jedinečné premiéry", subtitle: "Nové kusy tento měsíc", ctaText: "Mrkni", to: "#seznam-akci" },
+                            { image: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?q=80&w=1200&auto=format&fit=crop", title: "Nezapomenutelné akce", subtitle: "Co se stane na akci, zůstane na akci 😉", ctaText: "Přehled", to: "#seznam-akci" },
                         ]}
                     />
                 </div>
@@ -398,7 +397,7 @@ export default function EventsList() {
                             <div>Stránka <strong>{(pageData?.number ?? 0) + 1}</strong> / {pageData?.totalPages ?? 1}</div>
                         </div>
 
-                        <div style={listGrid}>
+                        <div id="seznam-akci" style={{...listGrid, scrollMarginTop: "100px"}}>
                             {(pageData?.content?.length ?? 0) === 0 && (
                                 <div style={{ gridColumn: "1 / -1", color: "#a7b0c0" }}>Nic nenalezeno.</div>
                             )}

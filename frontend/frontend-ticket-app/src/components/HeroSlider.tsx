@@ -132,7 +132,19 @@ export default function HeroSlider({ slides, intervalMs = 4000 }: { slides: Slid
                         <div style={content}>
                             <h3 style={titleCss}>{s.title}</h3>
                             {s.subtitle && <p style={subCss}>{s.subtitle}</p>}
-                            {s.to && <Link to={s.to} style={ctaBtn}>{s.ctaText ?? "Zobrazit"}</Link>}
+                            {s.to && (
+                                s.to.startsWith('#') ? (
+                                    // Pokud je to kotva (#), použijeme obyčejný <a> tag, který provede scroll
+                                    <a href={s.to} style={ctaBtn}>
+                                        {s.ctaText ?? "Zobrazit"}
+                                    </a>
+                                ) : (
+                                    // Jinak použijeme React Router Link
+                                    <Link to={s.to} style={ctaBtn}>
+                                        {s.ctaText ?? "Zobrazit"}
+                                    </Link>
+                                )
+                            )}
                         </div>
                     </div>
                 ))}
