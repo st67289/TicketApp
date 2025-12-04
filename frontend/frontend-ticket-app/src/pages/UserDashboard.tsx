@@ -1,26 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 
+// =================================================================
+// STYLY
+// =================================================================
 const wrap: React.CSSProperties = {
     minHeight: "100dvh",
-    display: "grid",
-    placeItems: "center",
-    padding: "80px 24px 40px",
+    padding: "100px 24px 40px",
     background: "linear-gradient(160deg,#0b0f1a,#181d2f)",
     color: "#e6e9ef",
     fontFamily: "Inter, system-ui, Segoe UI, Roboto, Arial"
 };
 
-const container: React.CSSProperties = { width: "min(1100px, 94vw)" };
+const container: React.CSSProperties = { width: "min(1100px, 94vw)", margin: "0 auto" };
+const headerRow: React.CSSProperties = { display: "grid", gap: 16, marginBottom: 30 };
 
-const headerRow: React.CSSProperties = {
-    display: "grid",
-    gap: 16,
-    marginBottom: 16
-};
-
-const card: React.CSSProperties = {
+const panel: React.CSSProperties = {
     background: "rgba(255,255,255,.06)",
     border: "1px solid rgba(255,255,255,.12)",
     borderRadius: 18,
@@ -31,9 +27,9 @@ const card: React.CSSProperties = {
 };
 
 const title: React.CSSProperties = { margin: 0, fontSize: 26, fontWeight: 800, letterSpacing: .2 };
-const subtitle: React.CSSProperties = { margin: 0, color: "#a7b0c0", fontSize: 14 };
+const subtitle: React.CSSProperties = { margin: "8px 0 20px", color: "#a7b0c0", fontSize: 14 };
 
-const grid: React.CSSProperties = {
+const statsGrid: React.CSSProperties = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
     gap: 16,
@@ -41,106 +37,150 @@ const grid: React.CSSProperties = {
 };
 
 const statCard: React.CSSProperties = {
-    ...card,
-    padding: 18
+    ...panel,
+    padding: 18,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    textDecoration: "none",
+    color: "#e6e9ef",
+    transition: "transform 0.2s, background 0.2s"
 };
 
 const statNum: React.CSSProperties = { fontSize: 28, fontWeight: 800 };
 const statLabel: React.CSSProperties = { color: "#a7b0c0", fontSize: 13, marginTop: 4 };
 
-const listCard: React.CSSProperties = {
-    ...card,
-    marginTop: 16
-};
-
-const list: React.CSSProperties = { display: "grid", gap: 10 };
-const row: React.CSSProperties = {
+const listGrid: React.CSSProperties = {
     display: "grid",
-    gridTemplateColumns: "1fr auto",
-    alignItems: "center",
-    padding: "12px 14px",
+    gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+    gap: 16,
+    marginTop: 16,
+};
+
+const eventCard: React.CSSProperties = {
+    ...panel,
+    padding: 16,
+    display: "grid",
+    gridTemplateRows: "auto 1fr auto",
+    gap: 12,
+    height: "100%",
+};
+
+const rowTop: React.CSSProperties = { display: "grid", gap: 6 };
+const evName: React.CSSProperties = { fontWeight: 800, fontSize: 18, margin: 0 };
+const evTime: React.CSSProperties = { fontWeight: 200, fontSize: 14, margin: 0 };
+const meta: React.CSSProperties = { color: "#a7b0c0", fontSize: 13 };
+
+const tagRow: React.CSSProperties = { display: "flex", gap: 8, flexWrap: "wrap", alignContent: "flex-start" };
+const tag: React.CSSProperties = {
+    padding: "4px 8px",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,.16)",
+    background: "rgba(255,255,255,.05)",
+    fontSize: 12,
+    color: "#cfd6e4",
+};
+
+const actions: React.CSSProperties = { display: "flex", gap: 10, marginTop: 0 };
+
+const ghostBtn: React.CSSProperties = {
+    padding: "10px 14px",
     borderRadius: 12,
+    border: "1px solid rgba(255,255,255,.16)",
     background: "rgba(255,255,255,.04)",
-    border: "1px solid rgba(255,255,255,.08)"
-};
-
-const actionLink: React.CSSProperties = {
-    color: "#22d3ee",
+    color: "#e6e9ef",
+    fontWeight: 700,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
     textDecoration: "none",
-    fontWeight: 700
+    textAlign: "center",
+    flex: 1
 };
-
-const buttonBar: React.CSSProperties = { display: "flex", gap: 10, marginTop: 16 };
-
 const primaryBtn: React.CSSProperties = {
-    padding: "12px 16px",
-    borderRadius: 14,
+    padding: "10px 14px",
+    borderRadius: 12,
     border: 0,
     background: "linear-gradient(135deg,#7c3aed,#22d3ee)",
     color: "#fff",
     fontWeight: 800,
     letterSpacing: .2,
     cursor: "pointer",
-    boxShadow: "0 10px 24px rgba(124,58,237,.35)"
-};
-
-const ghostBtn: React.CSSProperties = {
-    padding: "12px 16px",
-    borderRadius: 14,
-    border: "1px solid rgba(255,255,255,.16)",
-    background: "rgba(255,255,255,.04)",
-    color: "#e6e9ef",
-    fontWeight: 700,
-    cursor: "pointer"
+    boxShadow: "0 10px 24px rgba(124,58,237,.35)",
+    whiteSpace: "nowrap",
+    textDecoration: "none",
+    textAlign: "center",
+    display: "inline-block",
+    flex: 1
 };
 
 const BACKEND_URL = "http://localhost:8080";
 
-type Me = { email: string | null; role: "USER" | "ADMIN" | null };
-type EventDto = {
-    eventId: number;
+type Me = { email: string | null; role: "USER" | "ADMINISTRATOR" | null };
+type VenueShort = { id: number; name: string; address?: string | null };
+
+type EventListDto = {
+    id: number;
     name: string;
-    description?: string;
-    startTime: string; // ISO
-    endTime?: string;
-    venueId?: number;
-    seatingPrice?: number | null;
-    standingPrice?: number | null;
+    startTime: string;
+    venue?: VenueShort | null;
+    hasStanding: boolean;
+    hasSeating: boolean;
+    fromPrice?: number | null;
+    available: number;
+    total: number;
 };
+
+// DTO z backendu
+type DashboardData = {
+    upcomingEvents: EventListDto[];
+    totalUpcomingCount: number;
+    cheapestTicketPrice: number | null;
+};
+
+function formatDate(startIso?: string) {
+    if (!startIso) return "—";
+    try {
+        const s = new Date(startIso);
+        const intl = new Intl.DateTimeFormat("cs-CZ", { dateStyle: "medium", timeStyle: "short" });
+        return intl.format(s);
+    } catch { return startIso; }
+}
 
 export default function UserDashboard() {
     const nav = useNavigate();
     const [me, setMe] = useState<Me | null>(null);
-    const [events, setEvents] = useState<EventDto[]>([]);
+    const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // pokud není token → na login
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) { nav("/auth/login", { replace: true }); return; }
 
         const fetchAll = async () => {
             try {
-                // 1) kdo jsem
+                // 1) Info o userovi
                 const meRes = await fetch(`${BACKEND_URL}/api/auth/me`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (meRes.ok) {
-                    const m = await meRes.json();
-                    setMe({ email: m.email, role: m.role });
+                    setMe(await meRes.json());
                 } else {
-                    // token neplatný → logout
                     localStorage.removeItem("token");
                     nav("/auth/login", { replace: true });
                     return;
                 }
 
-                // 2) akce (veřejný endpoint dle tvé konfigurace)
-                const evRes = await fetch(`${BACKEND_URL}/api/events`);
-                if (evRes.ok) {
-                    const data = await evRes.json();
-                    setEvents(Array.isArray(data) ? data.slice(0, 6) : []);
+                // 2) Data pro dashboard (Top 3 akce + statistiky)
+                const dashRes = await fetch(`${BACKEND_URL}/api/dashboard/user`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                if (dashRes.ok) {
+                    setData(await dashRes.json());
                 }
+
+            } catch(e) {
+                console.error(e);
             } finally {
                 setLoading(false);
             }
@@ -148,88 +188,89 @@ export default function UserDashboard() {
         fetchAll();
     }, [nav]);
 
-    const upcomingCount = useMemo(() => events.length, [events]);
-    const cheapFrom = useMemo(() => {
-        const prices = events
-            .flatMap(e => [e.standingPrice ?? undefined, e.seatingPrice ?? undefined])
-            .filter((n): n is number => typeof n === "number");
-        return prices.length ? Math.min(...prices) : null;
-    }, [events]);
+    const events = data?.upcomingEvents || [];
 
     return (
         <div style={wrap}>
             <Navbar />
             <div style={container}>
+
+                {/* HLAVIČKA */}
                 <div style={headerRow}>
-                    <div style={card}>
+                    <div style={panel}>
                         <h1 style={title}>{loading ? "Načítám…" : "Vítej zpět 👋"}</h1>
                         <p style={subtitle}>
-                            {me?.email ? <>Přihlášen jako <strong>{me.email}</strong> ({me.role}).</> : "—"}
+                            {me?.email ? <>Přihlášen jako <strong>{me.email}</strong>.</> : "—"}
                         </p>
-
-                        <div style={buttonBar}>
-                            <Link to="/events" style={{ ...primaryBtn, textDecoration: "none" }}>Procházet akce</Link>
-                            <Link to="/user/tickets" style={{ ...ghostBtn, textDecoration: "none" }}>Moje vstupenky</Link>
-                            <Link to="/user/account" style={{ ...ghostBtn, textDecoration: "none" }}>Nastavení účtu</Link>
+                        <div style={{display: 'flex', gap: 10}}>
+                            <Link to="/events" style={primaryBtn}>Procházet akce</Link>
+                            <Link to="/user/tickets" style={ghostBtn}>Moje vstupenky</Link>
                         </div>
                     </div>
 
-                    <div style={grid}>
+                    <div style={statsGrid}>
                         <div style={statCard}>
-                            <div style={statNum}>{upcomingCount}</div>
+                            <div style={statNum}>{data?.totalUpcomingCount ?? 0}</div>
                             <div style={statLabel}>Nadcházející akce</div>
                         </div>
+
                         <div style={statCard}>
-                            <div style={statNum}>{cheapFrom !== null ? `${cheapFrom.toFixed(0)} Kč` : "—"}</div>
+                            <div style={statNum}>
+                                {data?.cheapestTicketPrice ? `${data.cheapestTicketPrice} Kč` : "—"}
+                            </div>
                             <div style={statLabel}>Od nejlevnější vstupenky</div>
                         </div>
-                        <div style={statCard}>
-                            <div style={statNum}>{me?.role === "ADMIN" ? "✅" : "👤"}</div>
-                            <div style={statLabel}>{me?.role === "ADMIN" ? "Admin přístup" : "Uživatelský účet"}</div>
-                        </div>
+
+                        <Link to="/user/account" style={{...statCard, cursor: "pointer", borderColor: "rgba(34, 211, 238, 0.3)", background: "rgba(34, 211, 238, 0.05)"}}>
+                            <div style={statNum}>⚙️</div>
+                            <div style={{...statLabel, color: "#22d3ee", fontWeight: "bold"}}>Nastavení účtu</div>
+                        </Link>
                     </div>
                 </div>
 
-                <div style={listCard}>
-                    <h2 style={{ ...title, fontSize: 20, marginBottom: 10 }}>Doporučené / nadcházející</h2>
-                    <div style={list}>
-                        {events.length === 0 && (
-                            <div style={{ ...row, justifyItems: "start" }}>Zatím tu nic není – mrkni na <Link to="/events" style={actionLink}>všechny akce</Link>.</div>
+                {/* SEZNAM AKCÍ */}
+                <div>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16}}>
+                        <h2 style={{ ...title, fontSize: 22 }}>Doporučené / nadcházející</h2>
+                        <Link to="/events" style={{color: "#22d3ee", textDecoration: "none", fontSize: 14, fontWeight: 700}}>Zobrazit vše →</Link>
+                    </div>
+
+                    <div style={listGrid}>
+                        {!loading && events.length === 0 && (
+                            <div style={{ gridColumn: "1 / -1", color: "#a7b0c0", padding: 20, textAlign: "center", background: "rgba(255,255,255,0.03)", borderRadius: 12 }}>
+                                Žádné nadcházející akce.
+                            </div>
                         )}
+
                         {events.map(e => (
-                            <div key={e.eventId} style={row}>
-                                <div>
-                                    <div style={{ fontWeight: 700 }}>{e.name}</div>
-                                    <div style={{ color: "#a7b0c0", fontSize: 13 }}>
-                                        {formatDateRange(e.startTime, e.endTime)}
-                                        {typeof e.seatingPrice === "number" || typeof e.standingPrice === "number" ? (
-                                            <> · od {minNonNull(e.seatingPrice, e.standingPrice)} Kč</>
-                                        ) : null}
+                            <article key={e.id} style={eventCard}>
+                                <div style={rowTop}>
+                                    <h2 style={evName}>{e.name}</h2>
+                                    <h3 style={evTime}>{formatDate(e.startTime)}</h3>
+                                    <div style={meta}>
+                                        {e.venue?.name ?? "—"}
+                                        {e.venue?.address ? `, ${e.venue.address}` : ""}
                                     </div>
                                 </div>
-                                <Link to={`/events/${e.eventId}`} style={actionLink}>Detail</Link>
-                            </div>
+
+                                <div>
+                                    <div style={tagRow}>
+                                        {typeof e.fromPrice === "number" && <span style={tag}>od {e.fromPrice.toFixed(0)} Kč</span>}
+                                        {e.hasSeating && <span style={tag}>Sezení</span>}
+                                        {e.hasStanding && <span style={tag}>Stání</span>}
+                                        <span style={tag}>{e.available} volných</span>
+                                    </div>
+                                </div>
+
+                                <div style={actions}>
+                                    <Link to={`/events/${e.id}`} style={ghostBtn}>Detail</Link>
+                                    <button style={primaryBtn} onClick={() => nav(`/events/${e.id}`)}>Koupit</button>
+                                </div>
+                            </article>
                         ))}
                     </div>
                 </div>
             </div>
         </div>
     );
-}
-
-function minNonNull(a?: number | null, b?: number | null) {
-    const arr = [a, b].filter((n): n is number => typeof n === "number");
-    return arr.length ? Math.min(...arr).toFixed(0) : "—";
-}
-
-function formatDateRange(startIso?: string, endIso?: string) {
-    if (!startIso) return "—";
-    try {
-        const s = new Date(startIso);
-        const e = endIso ? new Date(endIso) : null;
-        const intl = new Intl.DateTimeFormat("cs-CZ", { dateStyle: "medium", timeStyle: "short" });
-        return e ? `${intl.format(s)} – ${intl.format(e)}` : intl.format(s);
-    } catch {
-        return startIso;
-    }
 }

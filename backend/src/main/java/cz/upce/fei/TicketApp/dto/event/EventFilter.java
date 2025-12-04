@@ -1,5 +1,6 @@
 package cz.upce.fei.TicketApp.dto.event;
 
+import lombok.Builder;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -7,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
+@Builder
 @Data
 public class EventFilter {
     private Long venueId;

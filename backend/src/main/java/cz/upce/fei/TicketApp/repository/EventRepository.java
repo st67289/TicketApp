@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -25,4 +26,21 @@ public interface EventRepository
 
     List<Event> findAllByStartTimeAfter(OffsetDateTime from);
     List<Event> findAllByStartTimeBetween(OffsetDateTime from, OffsetDateTime to);
+
+    // Spočítat počet akcí, které teprve budou
+    long countByStartTimeAfter(OffsetDateTime now);
+
+    // Najít absolutně nejnižší cenu ze všech budoucích akcí
+    // (Porovnáváme standingPrice a seatingPrice, ignorujeme NULL)
+    @Query("""
+        SELECT MIN(LEAST(
+            COALESCE(e.standingPrice, 99999999), 
+            COALESCE(e.seatingPrice, 99999999)
+        )) 
+        FROM Event e 
+        WHERE e.startTime > :now 
+          AND (e.standingPrice IS NOT NULL OR e.seatingPrice IS NOT NULL)
+    """)
+    BigDecimal findCheapestPriceInFuture(@Param("now") OffsetDateTime now);
 }
+
