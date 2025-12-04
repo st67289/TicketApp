@@ -5,9 +5,6 @@ import cz.upce.fei.TicketApp.dto.event.EventDetailDto;
 import cz.upce.fei.TicketApp.dto.event.EventFilter;
 import cz.upce.fei.TicketApp.dto.event.EventListDto;
 import cz.upce.fei.TicketApp.dto.event.EventUpdateDto;
-import cz.upce.fei.TicketApp.model.entity.Ticket;
-import cz.upce.fei.TicketApp.model.enums.TicketStatus;
-import cz.upce.fei.TicketApp.repository.TicketRepository;
 import cz.upce.fei.TicketApp.service.EventService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,8 +19,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
 
 @RestController
 @RequestMapping("/api/events")
@@ -31,8 +26,6 @@ import java.util.stream.Collectors;
 public class EventController {
 
     private final EventService eventService;
-    private final TicketRepository ticketRepository;
-
 
     // =================================================================
     // =========== VEŘEJNÉ ENDPOINTY PRO VŠECHNY UŽIVATELE ===========
@@ -53,17 +46,9 @@ public class EventController {
 
     @GetMapping("/{id}/occupied-seats")
     public ResponseEntity<List<Long>> getOccupiedSeats(@PathVariable Long id) {
-        // Můžeš to dát do EventService, nebo to nechat tady pro rychlost:
-        List<Ticket> tickets = ticketRepository.findAllByEventIdAndStatusNot(id, TicketStatus.CANCELLED);
-
-        List<Long> ids = tickets.stream()
-                .filter(t -> t.getSeat() != null)
-                .map(t -> t.getSeat().getId())
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(ids);
+        // Voláme logiku přesunutou do Service
+        return ResponseEntity.ok(eventService.getOccupiedSeats(id));
     }
-
 
     // =================================================================
     // =========== ADMINISTRÁTORSKÉ ENDPOINTY PRO SPRÁVU AKCÍ ===========
@@ -75,9 +60,6 @@ public class EventController {
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PostMapping
     public ResponseEntity<EventDetailDto> create(@Valid @RequestBody EventCreateDto dto) {
-        // Metoda vrací 200 OK s tělem nově vytvořené akce.
-        // Pro REST sémantiku by bylo možné vrátit i 201 Created s hlavičkou Location,
-        // ale 200 OK je také běžně používané a pro většinu klientů snazší na zpracování.
         return ResponseEntity.ok(eventService.create(dto));
     }
 
@@ -100,5 +82,4 @@ public class EventController {
         eventService.delete(id);
         return ResponseEntity.noContent().build();
     }
-
 }

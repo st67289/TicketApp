@@ -3,6 +3,7 @@ package cz.upce.fei.TicketApp.service;
 import cz.upce.fei.TicketApp.dto.common.VenueShortDto;
 import cz.upce.fei.TicketApp.dto.event.*;
 import cz.upce.fei.TicketApp.model.entity.Event;
+import cz.upce.fei.TicketApp.model.entity.Ticket;
 import cz.upce.fei.TicketApp.model.entity.Venue;
 import cz.upce.fei.TicketApp.model.enums.TicketStatus;
 import cz.upce.fei.TicketApp.repository.EventRepository;
@@ -23,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +37,6 @@ public class EventService {
 
     public Page<EventListDto> list(EventFilter filter, Pageable pageable) {
         Specification<Event> spec = buildSpec(filter);
-        // nebo eventRepo.findAll(pageable)
         Page<Event> page = (spec == null)
                 ? eventRepo.findAll(pageable)
                 : eventRepo.findAll(spec, pageable);
@@ -48,6 +49,15 @@ public class EventService {
         return toDetailDto(e);
     }
 
+    public List<Long> getOccupiedSeats(Long eventId) {
+        List<Ticket> tickets = ticketRepo.findAllByEventIdAndStatusNot(eventId, TicketStatus.CANCELLED);
+
+        return tickets.stream()
+                .filter(t -> t.getSeat() != null)
+                .map(t -> t.getSeat().getId())
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public EventDetailDto create(@Valid EventCreateDto dto) {
         if (dto.getEndTime() != null && dto.getEndTime().isBefore(dto.getStartTime())) {
@@ -56,7 +66,6 @@ public class EventService {
         Venue venue = venueRepo.findById(dto.getVenueId())
                 .orElseThrow(() -> new EntityNotFoundException("Venue not found: " + dto.getVenueId()));
 
-        // waring když nemá místo stání nebo sezení
         if (venue.getStandingCapacity() == null || venue.getStandingCapacity() <= 0) {
             if (dto.getStandingPrice() != null)
                 throw new IllegalArgumentException("Venue has no standing capacity; standingPrice not allowed");
@@ -118,7 +127,23 @@ public class EventService {
         eventRepo.delete(e);
     }
 
-    private EventListDto toListDto(Event e) {
+    // ==========================================================
+    // PRIVATE HELPERS (Refactored to avoid duplication)
+    // ==========================================================
+
+    /**
+     * Pomocný záznam pro statistiky, abychom nemuseli psát logiku 2x.
+     */
+    private record EventStats(
+            int standingCap,
+            int sittingCap,
+            boolean hasStanding,
+            boolean hasSeating,
+            int total,
+            int available
+    ) {}
+
+    private EventStats calculateStats(Event e) {
         var v = e.getVenue();
         int standingCap = i0(v.getStandingCapacity());
         int sittingCap  = i0(v.getSittingCapacity());
@@ -132,36 +157,30 @@ public class EventService {
                 e.getId(), List.of(TicketStatus.ISSUED, TicketStatus.USED, TicketStatus.RESERVED));
         int available = Math.max(total - (int) soldOrUsed, 0);
 
+        return new EventStats(standingCap, sittingCap, hasStanding, hasSeating, total, available);
+    }
+
+    private EventListDto toListDto(Event e) {
+        EventStats stats = calculateStats(e);
         BigDecimal fromPrice = minNonNull(e.getStandingPrice(), e.getSeatingPrice());
 
         return EventListDto.builder()
                 .id(e.getId())
                 .name(e.getName())
                 .startTime(e.getStartTime())
-                .venue(toVenueShort(v))
-                .hasStanding(hasStanding)
-                .hasSeating(hasSeating)
+                .venue(toVenueShort(e.getVenue()))
+                .hasStanding(stats.hasStanding)
+                .hasSeating(stats.hasSeating)
                 .fromPrice(fromPrice)
                 .standingPrice(e.getStandingPrice())
                 .seatingPrice(e.getSeatingPrice())
-                .available(available)
-                .total(total)
+                .available(stats.available)
+                .total(stats.total)
                 .build();
     }
 
     private EventDetailDto toDetailDto(Event e) {
-        var v = e.getVenue();
-        int standingCap = i0(v.getStandingCapacity());
-        int sittingCap  = i0(v.getSittingCapacity());
-
-        boolean hasStanding = standingCap > 0;
-        boolean hasSeating  = sittingCap  > 0;
-
-        int total = (hasStanding ? standingCap : 0) + (hasSeating ? sittingCap : 0);
-
-        long soldOrUsed = ticketRepo.countByEventIdAndStatusIn(
-                e.getId(), List.of(TicketStatus.ISSUED, TicketStatus.USED, TicketStatus.RESERVED));
-        int available = Math.max(total - (int) soldOrUsed, 0);
+        EventStats stats = calculateStats(e);
 
         return EventDetailDto.builder()
                 .id(e.getId())
@@ -169,15 +188,15 @@ public class EventService {
                 .description(e.getDescription())
                 .startTime(e.getStartTime())
                 .endTime(e.getEndTime())
-                .venue(toVenueShort(v))
-                .hasStanding(hasStanding)
-                .hasSeating(hasSeating)
-                .standingCapacity(standingCap)
-                .sittingCapacity(sittingCap)
+                .venue(toVenueShort(e.getVenue()))
+                .hasStanding(stats.hasStanding)
+                .hasSeating(stats.hasSeating)
+                .standingCapacity(stats.standingCap)
+                .sittingCapacity(stats.sittingCap)
                 .standingPrice(e.getStandingPrice())
                 .seatingPrice(e.getSeatingPrice())
-                .available(available)
-                .total(total)
+                .available(stats.available)
+                .total(stats.total)
                 .build();
     }
 
@@ -204,8 +223,6 @@ public class EventService {
 
         return (root, q, cb) -> {
             List<Predicate> preds = new ArrayList<>();
-
-            // explicitní LEFT JOIN na venue (jistota pro kapacity)
             var venue = root.join("venue", JoinType.LEFT);
 
             if (f.getVenueId() != null) {
@@ -239,5 +256,4 @@ public class EventService {
             return preds.isEmpty() ? cb.conjunction() : cb.and(preds.toArray(new Predicate[0]));
         };
     }
-
 }
