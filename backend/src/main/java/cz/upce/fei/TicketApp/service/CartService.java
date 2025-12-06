@@ -39,24 +39,19 @@ public class CartService {
         return mapCart(cart);
     }
 
-    // ====== ADD (Unified) ======
     public CartDto addItem(String email, CartAddItemDto dto) {
         AppUser user = users.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new EntityNotFoundException("Uživatel nenalezen: " + email));
 
-        // Načteme košík (ale neukládáme ho zbytečně, vyhýbáme se lockům)
         Cart cart = carts.findByUserId(user.getId())
                 .orElseGet(() -> createCart(user));
 
         Event event = events.findById(dto.getEventId())
                 .orElseThrow(() -> new EntityNotFoundException("Event nenalezen: " + dto.getEventId()));
 
-        // ROZHODOVÁNÍ: SEZENÍ vs. STÁNÍ
         if (dto.getSeatIds() != null && !dto.getSeatIds().isEmpty()) {
-            // SEATING (Batch - vše v jedné transakci)
             return addSeatingBatch(cart, event, dto.getSeatIds());
         } else {
-            // STANDING
             int qty = dto.getQuantity() == null ? 1 : dto.getQuantity();
             if (qty <= 0) {
                 throw new IllegalArgumentException("Množství musí být kladné.");
@@ -65,45 +60,35 @@ public class CartService {
         }
     }
 
-    // --- Logika pro HROMADNÉ SEZENÍ (Batch) ---
     private CartDto addSeatingBatch(Cart cart, Event event, List<Long> seatIds) {
-        // 1. Ověříme, že sedadla fyzicky existují v DB
         List<Seat> seatsList = seats.findAllById(seatIds);
         if (seatsList.size() != seatIds.size()) {
             throw new EntityNotFoundException("Některá zadaná sedadla neexistují.");
         }
 
-        // 2. Načteme existující lístky pro tato sedadla (včetně zrušených/CANCELLED)
         List<Ticket> existingTickets = tickets.findAllByEventIdAndSeatIdIn(event.getId(), seatIds);
 
         List<Ticket> toSave = new ArrayList<>();
 
-        // 3. Projdeme každé požadované sedadlo
         for (Seat seat : seatsList) {
-            // Zkusíme najít lístek pro toto konkrétní sedadlo
             Ticket existing = existingTickets.stream()
                     .filter(t -> t.getSeat().getId().equals(seat.getId()))
                     .findFirst()
                     .orElse(null);
 
             if (existing != null) {
-                // A) Lístek existuje
                 if (existing.getStatus() != TicketStatus.CANCELLED) {
-                    // Je aktivní. Pokud není v mém košíku -> Chyba, někdo ho má.
                     if (existing.getCart() == null || !existing.getCart().getId().equals(cart.getId())) {
                         throw new SeatAlreadyTakenException("Sedadlo " + seat.getSeatNumber() + " je již obsazeno.");
                     }
-                    // Pokud je v mém košíku, ignorujeme (už ho mám), nic neukládáme
                 } else {
-                    // B) Lístek je CANCELLED (zrušený) -> Oživíme ho (Recyklace)
                     existing.setStatus(TicketStatus.RESERVED);
                     existing.setCart(cart);
                     existing.setPrice(event.getSeatingPrice());
-                    existing.setTicketCode(genCode(event.getId())); // Nový kód
+                    existing.setTicketCode(genCode(event.getId()));
                     toSave.add(existing);
                 }
             } else {
-                // C) Lístek neexistuje -> Vytvoříme nový
                 Ticket newTicket = Ticket.builder()
                         .event(event)
                         .seat(seat)
@@ -116,16 +101,14 @@ public class CartService {
             }
         }
 
-        // 4. Uložíme všechny změny v jedné dávce
         if (!toSave.isEmpty()) {
             tickets.saveAll(toSave);
-            tickets.flush(); // Vynutí zápis do DB hned (pro jistotu chyb)
+            tickets.flush();
         }
 
         return mapCart(cart);
     }
 
-    // --- Logika pro STÁNÍ ---
     private CartDto addStanding(Cart cart, Event event, int qty) {
         Event lockedEvent = events.findByIdWithLock(event.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Event nenalezen při zamykání"));
@@ -162,19 +145,15 @@ public class CartService {
                     .build();
             standingTickets.add(t);
         }
-        tickets.saveAll(standingTickets); // Batch insert i pro stání
+        tickets.saveAll(standingTickets);
 
         return mapCart(cart);
     }
 
-    // ... Helpery (remove, clear, genCode, mapCart) zůstávají stejné ...
-
     private String genCode(Long eventId) {
-        // Použití UUID je bezpečnější pro hromadné operace než nanoTime
         return "E" + eventId + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
-    // ... zbytek tvých metod ...
     private Cart createCartFor(String email) {
         AppUser user = users.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new EntityNotFoundException("Uživatel nenalezen: " + email));
