@@ -1,5 +1,6 @@
 zprovoznění:
-1) npm install cypress --save-dev
+(příkazy se spuští ve stejné složce jako je package.json)
+1) npm install cypress --save-dev 
 2) npx cypress open
 3) vybrat E2E testy
 4) vybrat chrome/electron
