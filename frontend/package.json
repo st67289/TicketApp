@@ -1,5 +1,9 @@
 {
   "dependencies": {
-    "react-router-dom": "^7.9.3"
+    "react-router-dom": "^7.9.3",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "cypress": "^15.7.1"
   }
 }
