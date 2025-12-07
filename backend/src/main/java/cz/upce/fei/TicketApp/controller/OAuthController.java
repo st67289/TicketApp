@@ -1,8 +1,7 @@
 package cz.upce.fei.TicketApp.controller;
 
-import cz.upce.fei.TicketApp.repository.UserRepository;
-import cz.upce.fei.TicketApp.security.JwtService;
-import cz.upce.fei.TicketApp.service.oauth2.ShortCodeStore;
+import cz.upce.fei.TicketApp.dto.AuthResponseDto;
+import cz.upce.fei.TicketApp.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,35 +16,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class OAuthController {
 
-    private final ShortCodeStore shortCodeStore;
-    private final JwtService jwtService;
-    private final UserRepository users;
+    private final UserService userService;
 
-    //Pro oauth 2 - Endpoint pro výměnu kódu za JWT
+    // Endpoint pro výměnu kódu za JWT
     @PostMapping("/token")
-    public ResponseEntity<?> exchangeCode(@RequestBody Map<String, String> body) {
-        String code = body.get("code");
-
-        if (code == null || code.trim().isEmpty()) {
-            return ResponseEntity.status(400).body(Map.of("error", "Code is required"));
-        }
-
-        String email = shortCodeStore.consumeCode(code);
-
-        if (email == null) {
-            return ResponseEntity.status(400).body(Map.of("error", "Invalid or expired code"));
-        }
-
-        var user = users.findByEmailIgnoreCase(email).orElse(null);
-        if (user == null) {
-            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
-        }
-
-        String jwt = jwtService.generateToken(email, user.getRole().name());
-        return ResponseEntity.ok(Map.of(
-                "token", jwt,
-                "role", user.getRole().name()
-        ));
+    public ResponseEntity<AuthResponseDto> exchangeCode(@RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(userService.loginOAuth(body.get("code")));
     }
-
 }

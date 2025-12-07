@@ -11,6 +11,7 @@ import cz.upce.fei.TicketApp.model.entity.AppUser;
 import cz.upce.fei.TicketApp.model.enums.UserRoles;
 import cz.upce.fei.TicketApp.repository.UserRepository;
 import cz.upce.fei.TicketApp.security.JwtService;
+import cz.upce.fei.TicketApp.service.oauth2.ShortCodeStore;
 import cz.upce.fei.TicketApp.service.passwordReset.EmailService;
 import cz.upce.fei.TicketApp.service.passwordReset.ResetCodeStore;
 import jakarta.persistence.EntityNotFoundException;
@@ -31,6 +32,33 @@ public class UserService {
     private final JwtService jwtService;
     private final ResetCodeStore resetCodeStore;
     private final EmailService emailService;
+    private final ShortCodeStore shortCodeStore;
+
+    @Transactional
+    public AuthResponseDto loginOAuth(String code) {
+        if (code == null || code.trim().isEmpty()) {
+            throw new IllegalArgumentException("Code is required");
+        }
+
+        String email = shortCodeStore.consumeCode(code);
+
+        if (email == null) {
+            throw new IllegalArgumentException("Invalid or expired code");
+        }
+
+        AppUser user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        // Volitelně: Kontrola, zda není uživatel zablokován (stejně jako u běžného loginu)
+        if (!user.isEnabled()) {
+            throw new IllegalArgumentException("Váš účet byl zablokován.");
+        }
+
+        String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
+
+        // Vracíme AuthResponseDto, což je čistší než vracet Mapu
+        return new AuthResponseDto(token, user.getEmail(), user.getRole(), user.getOauthProvider());
+    }
 
     public AuthResponseDto register(RegisterDto req) {
         final String email = req.getEmail().trim().toLowerCase();
