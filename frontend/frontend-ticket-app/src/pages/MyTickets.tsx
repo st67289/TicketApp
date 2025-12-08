@@ -9,6 +9,21 @@ const container: React.CSSProperties = { width: "min(900px, 94vw)", margin: "0 a
 const panel: React.CSSProperties = { background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24, backdropFilter: "blur(10px)" };
 const h1: React.CSSProperties = { marginTop: 0, fontSize: 28, fontWeight: 800 };
 
+// Styl vyhledávacího pole (stejný jako u objednávek)
+const searchInput: React.CSSProperties = {
+    width: "100%",
+    padding: "12px 16px",
+    marginBottom: 24,
+    background: "rgba(0,0,0,0.3)",
+    border: "1px solid rgba(255,255,255,0.15)",
+    borderRadius: 12,
+    color: "#fff",
+    fontSize: 15,
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color 0.2s"
+};
+
 const grid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16, marginTop: 20 };
 const card: React.CSSProperties = { background: "rgba(0,0,0,0.2)", borderRadius: 12, padding: 16, border: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", gap: 8 };
 
@@ -77,6 +92,7 @@ export default function MyTickets() {
     const [tickets, setTickets] = useState<TicketDto[]>([]);
     const [loading, setLoading] = useState(true);
     const [zoomedTicket, setZoomedTicket] = useState<TicketDto | null>(null);
+    const [searchTerm, setSearchTerm] = useState(""); // 1. State pro hledání
 
     //Uzavření rozkliklého qr kodu přes Esc
     useEffect(() => {
@@ -104,10 +120,25 @@ export default function MyTickets() {
         fetchTickets();
     }, []);
 
+    // 2. Logika filtrování
+    const filteredTickets = tickets.filter(t => {
+        if (!searchTerm) return true;
+        const lowerTerm = searchTerm.toLowerCase();
+        const dateStr = new Date(t.eventStart).toLocaleString("cs-CZ").toLowerCase();
+        const seatInfo = t.type === "STANDING" ? "na stání" : `řada ${t.seatRow} místo ${t.seatNumber}`;
+
+        return (
+            t.eventName.toLowerCase().includes(lowerTerm) ||       // Název akce
+            t.venue.name.toLowerCase().includes(lowerTerm) ||      // Název místa
+            t.ticketCode.toLowerCase().includes(lowerTerm) ||      // Kód vstupenky
+            dateStr.includes(lowerTerm) ||                         // Datum
+            seatInfo.includes(lowerTerm)                           // Typ místa
+        );
+    });
+
     const handleDownloadPdf = async (ticketId: number) => {
         const token = localStorage.getItem("token");
         try {
-            // 1. Stáhneme data jako Blob (binary large object)
             const res = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}/pdf`, {
                 method: "GET",
                 headers: { Authorization: `Bearer ${token}` }
@@ -115,18 +146,13 @@ export default function MyTickets() {
 
             if (!res.ok) throw new Error("Chyba stahování");
 
-            // 2. Vytvoříme z dat URL
             const blob = await res.blob();
             const url = window.URL.createObjectURL(blob);
-
-            // 3. Vytvoříme neviditelný odkaz a "klikneme" na něj
             const link = document.createElement("a");
             link.href = url;
-            link.download = `vstupenka_${ticketId}.pdf`; // Název souboru
+            link.download = `vstupenka_${ticketId}.pdf`;
             document.body.appendChild(link);
             link.click();
-
-            // 4. Úklid
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
 
@@ -145,14 +171,28 @@ export default function MyTickets() {
                 <div style={panel}>
                     <h1 style={h1}>Moje vstupenky</h1>
 
+                    {/* 3. Vstupní pole */}
+                    <input
+                        type="text"
+                        placeholder="Hledat akci, kód, místo..."
+                        style={searchInput}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+
                     {tickets.length === 0 ? (
                         <div style={{color: "#a7b0c0", padding: 20, textAlign: "center"}}>
                             Zatím nemáte žádné vstupenky. <br/>
                             <Link to="/events" style={{color: "#22d3ee"}}>Jít nakupovat</Link>
                         </div>
+                    ) : filteredTickets.length === 0 ? (
+                        <div style={{color: "#a7b0c0", padding: 20, textAlign: "center"}}>
+                            Žádná vstupenka neodpovídá hledání "{searchTerm}".
+                        </div>
                     ) : (
                         <div style={grid}>
-                            {tickets.map(t => (
+                            {/* 4. Renderujeme filtrovaný seznam */}
+                            {filteredTickets.map(t => (
                                 <div key={t.id} style={card}>
                                     <div>
                                         <div style={label}>Akce</div>
@@ -181,7 +221,7 @@ export default function MyTickets() {
 
                                     <div
                                         style={{ marginTop: 12, display: "flex", justifyContent: "center", cursor: "zoom-in" }}
-                                        onClick={() => setZoomedTicket(t)} // <--- TADY JE AKCE
+                                        onClick={() => setZoomedTicket(t)}
                                         title="Zvětšit QR kód"
                                     >
                                         <div style={{ padding: 8, background: "white", borderRadius: 8 }}>
@@ -195,7 +235,7 @@ export default function MyTickets() {
                                     <div style={{textAlign: "center", fontSize: 11, color: "#a7b0c0", marginTop: 4}}>
                                         {t.ticketCode}
                                     </div>
-                                    {/* Tlačítko PDF */}
+
                                     <button
                                         style={pdfBtn}
                                         onClick={() => handleDownloadPdf(t.id)}

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 // =================================================================
-// STYLY (podobné jako v AdminVenues)
+// STYLY
 // =================================================================
 const table: React.CSSProperties = { width: "100%", borderCollapse: "collapse", marginTop: 16, tableLayout: 'fixed' };
 const th: React.CSSProperties = { padding: "12px 14px", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,.18)", color: "#a7b0c0", fontSize: 13, textTransform: "uppercase" };
@@ -12,6 +12,21 @@ const buttonBar: React.CSSProperties = { display: "flex", gap: "10px" };
 const primaryBtn: React.CSSProperties = { padding: "10px 14px", borderRadius: 12, border: 0, background: "linear-gradient(135deg,#7c3aed,#22d3ee)", color: "#fff", fontWeight: 800, cursor: "pointer" };
 const actionBtn: React.CSSProperties = { padding: "8px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,.16)", background: "rgba(255,255,255,.04)", color: "#e6e9ef", fontWeight: 700, cursor: "pointer" };
 const dangerBtn: React.CSSProperties = { ...actionBtn, borderColor: "rgba(255, 107, 107, .35)", color: "#fca5a5" };
+
+// Styl pro vyhledávací pole
+const searchInput: React.CSSProperties = {
+    width: "100%",
+    padding: "12px 16px",
+    marginBottom: 20,
+    background: "rgba(0,0,0,0.3)",
+    border: "1px solid rgba(255,255,255,0.15)",
+    borderRadius: 12,
+    color: "#fff",
+    fontSize: 15,
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color 0.2s"
+};
 
 // Styly pro modální okno
 const modalOverlay: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'grid', placeItems: 'center', zIndex: 100 };
@@ -33,8 +48,8 @@ type EventDetailDto = {
     id: number;
     name: string;
     description: string;
-    startTime: string; // ISO format
-    endTime: string | null; // ISO format
+    startTime: string;
+    endTime: string | null;
     venue: VenueShortDto;
     standingPrice: number | null;
     seatingPrice: number | null;
@@ -44,20 +59,18 @@ type EventFormData = {
     description: string;
     startTime: string;
     endTime: string;
-    venueId: number | string; // Může být string z formuláře
+    venueId: number | string;
     standingPrice: number | null;
     seatingPrice: number | null;
 };
 const initialFormData: EventFormData = { name: '', description: '', startTime: '', endTime: '', venueId: '', standingPrice: null, seatingPrice: null };
 
-// Pomocná funkce pro formátování data
 const formatDateTime = (isoString: string | null) => {
     if (!isoString) return 'N/A';
     return new Date(isoString).toLocaleString('cs-CZ', { dateStyle: 'medium', timeStyle: 'short' });
 };
 const toDateTimeLocal = (isoString: string | null) => {
     if (!isoString) return '';
-    // Odstraníme Z a milisekundy, aby to `datetime-local` input přijal
     return isoString.slice(0, 16);
 };
 
@@ -69,9 +82,11 @@ export default function AdminEvents() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [events, setEvents] = useState<EventDetailDto[]>([]);
-    const [venues, setVenues] = useState<VenueShortDto[]>([]); // Seznam míst pro dropdown
+    const [venues, setVenues] = useState<VenueShortDto[]>([]);
 
-    // Stav pro modální okno
+    // 1. Stav pro vyhledávání
+    const [searchTerm, setSearchTerm] = useState("");
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState<EventDetailDto | null>(null);
     const [formData, setFormData] = useState<EventFormData>(initialFormData);
@@ -83,9 +98,8 @@ export default function AdminEvents() {
             const token = localStorage.getItem("token");
             if (!token) { navigate("/auth/login", { replace: true }); return; }
 
-            // Načteme akce a místa konání paralelně
             const [eventsRes, venuesRes] = await Promise.all([
-                fetch(`${BACKEND_URL}/api/events?size=100`, { headers: { Authorization: `Bearer ${token}` } }), // size=100 pro jednoduchost
+                fetch(`${BACKEND_URL}/api/events?size=100`, { headers: { Authorization: `Bearer ${token}` } }),
                 fetch(`${BACKEND_URL}/api/admin/venues`, { headers: { Authorization: `Bearer ${token}` } })
             ]);
 
@@ -95,7 +109,7 @@ export default function AdminEvents() {
             const eventsData = await eventsRes.json();
             const venuesData = await venuesRes.json();
 
-            setEvents(eventsData.content || []); // API vrací stránkovaná data
+            setEvents(eventsData.content || []);
             setVenues(venuesData || []);
 
         } catch (e: unknown) {
@@ -109,6 +123,20 @@ export default function AdminEvents() {
     useEffect(() => {
         fetchData();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 2. Logika filtrování
+    const filteredEvents = events.filter(event => {
+        if (!searchTerm) return true;
+        const lowerTerm = searchTerm.toLowerCase();
+        const dateStr = formatDateTime(event.startTime).toLowerCase();
+
+        return (
+            event.name.toLowerCase().includes(lowerTerm) ||           // Název akce
+            event.id.toString().includes(lowerTerm) ||                // ID
+            (event.venue?.name || "").toLowerCase().includes(lowerTerm) || // Místo
+            dateStr.includes(lowerTerm)                               // Datum
+        );
+    });
 
     const openModalForNew = () => {
         setEditingEvent(null);
@@ -200,6 +228,15 @@ export default function AdminEvents() {
                 <button style={primaryBtn} onClick={openModalForNew}>+ Přidat novou akci</button>
             </div>
 
+            {/* 3. Vstupní pole pro hledání */}
+            <input
+                type="text"
+                placeholder="Hledat akci (název, místo, datum, ID)..."
+                style={searchInput}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
+
             <div style={{ overflowX: "auto" }}>
                 <table style={table}>
                     <thead>
@@ -212,20 +249,29 @@ export default function AdminEvents() {
                     </tr>
                     </thead>
                     <tbody>
-                    {events.map(event => (
-                        <tr key={event.id}>
-                            <td style={td}>{event.id}</td>
-                            <td style={td}>{event.name}</td>
-                            <td style={td}>{event.venue?.name || '-'}</td>
-                            <td style={td}>{formatDateTime(event.startTime)}</td>
-                            <td style={td}>
-                                <div style={buttonBar}>
-                                    <button style={actionBtn} onClick={() => openModalForEdit(event)}>Upravit</button>
-                                    <button style={dangerBtn} onClick={() => handleDelete(event.id)}>Smazat</button>
-                                </div>
+                    {/* 4. Renderování filtrovaného seznamu */}
+                    {filteredEvents.length > 0 ? (
+                        filteredEvents.map(event => (
+                            <tr key={event.id}>
+                                <td style={td}>{event.id}</td>
+                                <td style={td}>{event.name}</td>
+                                <td style={td}>{event.venue?.name || '-'}</td>
+                                <td style={td}>{formatDateTime(event.startTime)}</td>
+                                <td style={td}>
+                                    <div style={buttonBar}>
+                                        <button style={actionBtn} onClick={() => openModalForEdit(event)}>Upravit</button>
+                                        <button style={dangerBtn} onClick={() => handleDelete(event.id)}>Smazat</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan={5} style={{...td, textAlign: "center", color: "#a7b0c0", padding: 30}}>
+                                {searchTerm ? `Žádná akce neodpovídá "${searchTerm}"` : "Žádná data."}
                             </td>
                         </tr>
-                    ))}
+                    )}
                     </tbody>
                 </table>
             </div>
@@ -233,7 +279,7 @@ export default function AdminEvents() {
             {isModalOpen && (
                 <div style={modalOverlay} onClick={() => setIsModalOpen(false)}>
                     <div style={modalContent} onClick={e => e.stopPropagation()}>
-                        <h3 style={{ marginTop: 0 }}>{editingEvent ? 'Upravit akci' : 'Nová akce'}</h3>
+                        <h3 style={{ marginTop: 0 }}>{editingEvent ? 'Upravit akci' : 'Nová akci'}</h3>
                         <form onSubmit={handleSave}>
                             <div style={formGrid}>
                                 <div style={fullWidthField}>

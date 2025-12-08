@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import SeatingDesigner from "./SeatingDesigner";
 
 // =================================================================
-// STYLY (půjčené a upravené pro tuto komponentu)
+// STYLY
 // =================================================================
 const table: React.CSSProperties = { width: "100%", borderCollapse: "collapse", marginTop: 16 };
 const th: React.CSSProperties = { padding: "12px 14px", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,.18)", color: "#a7b0c0", fontSize: 13, textTransform: "uppercase" };
@@ -13,6 +13,21 @@ const buttonBar: React.CSSProperties = { display: "flex", gap: "10px" };
 const primaryBtn: React.CSSProperties = { padding: "10px 14px", borderRadius: 12, border: 0, background: "linear-gradient(135deg,#7c3aed,#22d3ee)", color: "#fff", fontWeight: 800, cursor: "pointer" };
 const actionBtn: React.CSSProperties = { padding: "8px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,.16)", background: "rgba(255,255,255,.04)", color: "#e6e9ef", fontWeight: 700, cursor: "pointer" };
 const dangerBtn: React.CSSProperties = { ...actionBtn, borderColor: "rgba(255, 107, 107, .35)", color: "#fca5a5" };
+
+// Styl pro vyhledávací pole
+const searchInput: React.CSSProperties = {
+    width: "100%",
+    padding: "12px 16px",
+    marginBottom: 20,
+    background: "rgba(0,0,0,0.3)",
+    border: "1px solid rgba(255,255,255,0.15)",
+    borderRadius: 12,
+    color: "#fff",
+    fontSize: 15,
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color 0.2s"
+};
 
 // Styly pro modální okno
 const modalOverlay: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'grid', placeItems: 'center', zIndex: 100 };
@@ -38,7 +53,6 @@ type VenueDto = {
     seatingPlanJson: string;
 };
 
-// Vytvoříme typ bez ID pro formulář
 type VenueFormData = Omit<VenueDto, 'id'>;
 
 const initialFormData: VenueFormData = {
@@ -58,7 +72,9 @@ export default function AdminVenues() {
     const [error, setError] = useState("");
     const [venues, setVenues] = useState<VenueDto[]>([]);
 
-    // Stav pro modální okno a formulář
+    // 1. Stav pro vyhledávání
+    const [searchTerm, setSearchTerm] = useState("");
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingVenue, setEditingVenue] = useState<VenueDto | null>(null);
     const [formData, setFormData] = useState<VenueFormData>(initialFormData);
@@ -88,6 +104,18 @@ export default function AdminVenues() {
     useEffect(() => {
         fetchVenues();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 2. Logika filtrování
+    const filteredVenues = venues.filter(venue => {
+        if (!searchTerm) return true;
+        const lowerTerm = searchTerm.toLowerCase();
+
+        return (
+            venue.name.toLowerCase().includes(lowerTerm) ||
+            venue.address.toLowerCase().includes(lowerTerm) ||
+            venue.id.toString().includes(lowerTerm)
+        );
+    });
 
     const openModalForNew = () => {
         setEditingVenue(null);
@@ -159,7 +187,6 @@ export default function AdminVenues() {
         }
     };
 
-
     if (loading) return <div>Načítám data...</div>;
     if (error) return <div style={{ color: "#fca5a5" }}>{error}</div>;
 
@@ -168,6 +195,15 @@ export default function AdminVenues() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
                 <button style={primaryBtn} onClick={openModalForNew}>+ Přidat nové místo</button>
             </div>
+
+            {/* 3. Input pole pro hledání */}
+            <input
+                type="text"
+                placeholder="Hledat místo podle názvu, adresy nebo ID..."
+                style={searchInput}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+            />
 
             <div style={{ overflowX: "auto" }}>
                 <table style={table}>
@@ -181,20 +217,29 @@ export default function AdminVenues() {
                     </tr>
                     </thead>
                     <tbody>
-                    {venues.map(venue => (
-                        <tr key={venue.id}>
-                            <td style={td}>{venue.id}</td>
-                            <td style={td}>{venue.name}</td>
-                            <td style={td}>{venue.address}</td>
-                            <td style={td}>{venue.standingCapacity} / {venue.sittingCapacity}</td>
-                            <td style={td}>
-                                <div style={buttonBar}>
-                                    <button style={actionBtn} onClick={() => openModalForEdit(venue)}>Upravit</button>
-                                    <button style={dangerBtn} onClick={() => handleDelete(venue.id)}>Smazat</button>
-                                </div>
+                    {/* 4. Použití filtrovaného seznamu */}
+                    {filteredVenues.length > 0 ? (
+                        filteredVenues.map(venue => (
+                            <tr key={venue.id}>
+                                <td style={td}>{venue.id}</td>
+                                <td style={td}>{venue.name}</td>
+                                <td style={td}>{venue.address}</td>
+                                <td style={td}>{venue.standingCapacity} / {venue.sittingCapacity}</td>
+                                <td style={td}>
+                                    <div style={buttonBar}>
+                                        <button style={actionBtn} onClick={() => openModalForEdit(venue)}>Upravit</button>
+                                        <button style={dangerBtn} onClick={() => handleDelete(venue.id)}>Smazat</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))
+                    ) : (
+                        <tr>
+                            <td colSpan={5} style={{...td, textAlign: "center", color: "#a7b0c0", padding: 30}}>
+                                {searchTerm ? `Žádné místo neodpovídá "${searchTerm}"` : "Žádná data."}
                             </td>
                         </tr>
-                    ))}
+                    )}
                     </tbody>
                 </table>
             </div>
@@ -227,19 +272,16 @@ export default function AdminVenues() {
                                     <SeatingDesigner
                                         initialJson={formData.seatingPlanJson || '{"rows":[]}'}
                                         onChange={(newJson) => {
-                                            // 1. Vypočítáme novou kapacitu z JSONu
                                             let newTotalSeats = 0;
                                             try {
                                                 const parsed = JSON.parse(newJson);
                                                 if (Array.isArray(parsed.rows)) {
-                                                    // Sečteme 'count' ze všech řad
                                                     newTotalSeats = parsed.rows.reduce((sum: number, row: { count: number | string }) => sum + (Number(row.count) || 0), 0);
                                                 }
                                             } catch (e) {
                                                 console.error("Chyba při výpočtu kapacity", e);
                                             }
 
-                                            // 2. Nastavíme JSON i novou kapacitu do stavu najednou
                                             setFormData(prev => ({
                                                 ...prev,
                                                 seatingPlanJson: newJson,

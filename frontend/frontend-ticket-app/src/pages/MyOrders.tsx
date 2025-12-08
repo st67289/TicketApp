@@ -3,10 +3,25 @@ import Navbar from "../components/Navbar";
 import { Link, useNavigate } from "react-router-dom";
 
 // STYLY
-const wrap: React.CSSProperties = { minHeight: "100dvh", padding: "100px 24px 40px", background: "linear-gradient(160deg,#0b0f1a,#181d2f)", color: "#e6e9ef", fontFamily: "Inter, sans-serif" };
+const wrap: React.CSSProperties = { minHeight: "100dvh", paddingTop:"100px", padding: "100px 24px 40px", background: "linear-gradient(160deg,#0b0f1a,#181d2f)", color: "#e6e9ef", fontFamily: "Inter, sans-serif" };
 const container: React.CSSProperties = { width: "min(900px, 94vw)", margin: "0 auto" };
 const panel: React.CSSProperties = { background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24, backdropFilter: "blur(10px)" };
 const h1: React.CSSProperties = { marginTop: 0, fontSize: 28, fontWeight: 800 };
+
+// Styl vyhledávacího pole
+const searchInput: React.CSSProperties = {
+    width: "100%",
+    padding: "12px 16px",
+    marginBottom: 24,
+    background: "rgba(0,0,0,0.3)",
+    border: "1px solid rgba(255,255,255,0.15)",
+    borderRadius: 12,
+    color: "#fff",
+    fontSize: 15,
+    outline: "none",
+    boxSizing: "border-box", // Důležité, aby padding nerozbil šířku
+    transition: "border-color 0.2s"
+};
 
 // Styl karty objednávky
 const orderCard: React.CSSProperties = {
@@ -44,6 +59,7 @@ type OrderDto = {
 export default function MyOrders() {
     const [orders, setOrders] = useState<OrderDto[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState(""); // 1. Nový state pro vyhledávání
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -67,6 +83,26 @@ export default function MyOrders() {
         fetchOrders();
     }, [navigate]);
 
+    // 2. Logika filtrování
+    const filteredOrders = orders.filter((order) => {
+        if (!searchTerm) return true; // Pokud je prázdné, ukaž vše
+
+        const lowerTerm = searchTerm.toLowerCase();
+        const dateStr = new Date(order.createdAt).toLocaleString("cs-CZ");
+
+        // Hledáme v ID, datu nebo statusu
+        if (order.id.toString().includes(lowerTerm)) return true;
+        if (order.status.toLowerCase().includes(lowerTerm)) return true;
+        if (dateStr.toLowerCase().includes(lowerTerm)) return true;
+
+        // Hledáme v položkách (název akce, místo, typ)
+        return order.items.some(item =>
+            item.eventName.toLowerCase().includes(lowerTerm) ||
+            item.venueName.toLowerCase().includes(lowerTerm) ||
+            item.type.toLowerCase().includes(lowerTerm)
+        );
+    });
+
     if (loading) return <div style={{...wrap, textAlign: "center", paddingTop: 150}}>Načítám objednávky...</div>;
 
     return (
@@ -81,13 +117,28 @@ export default function MyOrders() {
                         </Link>
                     </div>
 
+                    {/* 3. Input pole */}
+                    <input
+                        type="text"
+                        placeholder="Hledat objednávku, akci, datum..."
+                        style={searchInput}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+
                     {orders.length === 0 ? (
                         <div style={{color: "#a7b0c0", textAlign: "center", padding: 40}}>
                             Nemáte žádné objednávky.
                         </div>
+                    ) : filteredOrders.length === 0 ? (
+                        // Pokud existují objednávky, ale filtr nic nenašel
+                        <div style={{color: "#a7b0c0", textAlign: "center", padding: 40}}>
+                            Žádná objednávka neodpovídá hledání "{searchTerm}".
+                        </div>
                     ) : (
                         <div>
-                            {orders.map(order => (
+                            {/* 4. Renderování filtrovaného seznamu */}
+                            {filteredOrders.map(order => (
                                 <div key={order.id} style={orderCard}>
                                     <div style={headerRow}>
                                         <div>
