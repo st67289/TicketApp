@@ -14,7 +14,6 @@ const primaryBtn: React.CSSProperties = { padding: "10px 14px", borderRadius: 12
 const actionBtn: React.CSSProperties = { padding: "8px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,.16)", background: "rgba(255,255,255,.04)", color: "#e6e9ef", fontWeight: 700, cursor: "pointer" };
 const dangerBtn: React.CSSProperties = { ...actionBtn, borderColor: "rgba(255, 107, 107, .35)", color: "#fca5a5" };
 
-// Styl pro vyhledávací pole
 const searchInput: React.CSSProperties = {
     width: "100%",
     padding: "12px 16px",
@@ -29,9 +28,14 @@ const searchInput: React.CSSProperties = {
     transition: "border-color 0.2s"
 };
 
-// Styly pro modální okno
+const loadMoreBtn: React.CSSProperties = {
+    display: "block", width: "100%", padding: "12px", marginTop: 20,
+    background: "rgba(34, 211, 238, 0.1)", border: "1px solid rgba(34, 211, 238, 0.3)",
+    borderRadius: 12, color: "#22d3ee", fontWeight: "bold", cursor: "pointer", fontSize: 15
+};
+
 const modalOverlay: React.CSSProperties = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'grid', placeItems: 'center', zIndex: 100 };
-const modalContent: React.CSSProperties = { background: "#181d2f", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24, width: 'min(600px, 90vw)', boxShadow: "0 10px 30px rgba(0,0,0,.35)" };
+const modalContent: React.CSSProperties = { background: "#181d2f", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24, width: 'min(600px, 90vw)', boxShadow: "0 10px 30px rgba(0,0,0,.35)", maxHeight: '90vh', overflowY: 'auto' };
 const formGrid: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' };
 const formField: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '6px' };
 const formLabel: React.CSSProperties = { fontSize: 13, color: "#a7b0c0" };
@@ -39,9 +43,6 @@ const formInput: React.CSSProperties = { appearance: "none", width: "100%", padd
 const formTextarea: React.CSSProperties = { ...formInput, minHeight: '120px', fontFamily: 'monospace' };
 const fullWidthField: React.CSSProperties = { ...formField, gridColumn: '1 / -1' };
 
-// =================================================================
-// TYPY A KONSTANTY
-// =================================================================
 const BACKEND_URL = "http://localhost:8080";
 
 type VenueDto = {
@@ -51,6 +52,13 @@ type VenueDto = {
     standingCapacity: number;
     sittingCapacity: number;
     seatingPlanJson: string;
+};
+
+// Typ pro stránkovanou odpověď
+type PageResponse<T> = {
+    content: T[];
+    last: boolean;
+    number: number;
 };
 
 type VenueFormData = Omit<VenueDto, 'id'>;
@@ -63,60 +71,89 @@ const initialFormData: VenueFormData = {
     seatingPlanJson: ''
 };
 
-// =================================================================
-// KOMPONENTA
-// =================================================================
 export default function AdminVenues() {
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState("");
+
+    // Data
     const [venues, setVenues] = useState<VenueDto[]>([]);
 
-    // 1. Stav pro vyhledávání
+    // Vyhledávání a stránkování
     const [searchTerm, setSearchTerm] = useState("");
+    const [debouncedTerm, setDebouncedTerm] = useState("");
+    const [page, setPage] = useState(0);
+    const [isLastPage, setIsLastPage] = useState(false);
 
+    // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingVenue, setEditingVenue] = useState<VenueDto | null>(null);
     const [formData, setFormData] = useState<VenueFormData>(initialFormData);
 
-    const fetchVenues = async () => {
-        setLoading(true);
-        setError("");
-        try {
-            const token = localStorage.getItem("token");
-            if (!token) { navigate("/auth/login", { replace: true }); return; }
+    // 1. Debounce logic
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            if (searchTerm !== debouncedTerm) {
+                setDebouncedTerm(searchTerm);
+                setPage(0);
+                setVenues([]); // Reset seznamu při novém hledání
+            }
+        }, 500);
 
-            const res = await fetch(`${BACKEND_URL}/api/admin/venues`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+        return () => clearTimeout(handler);
+    }, [searchTerm, debouncedTerm]);
 
-            if (!res.ok) throw new Error("Nepodařilo se načíst místa konání.");
-            const data: VenueDto[] = await res.json();
-            setVenues(data);
-        } catch (e: unknown) {
-            if (e instanceof Error) setError(e.message);
-            else setError("Došlo k neznámé chybě.");
-        } finally {
-            setLoading(false);
-        }
+    // 2. Načítání dat
+    useEffect(() => {
+        const fetchVenues = async () => {
+            if (page === 0) setLoading(true);
+
+            try {
+                const token = localStorage.getItem("token");
+                if (!token) { navigate("/auth/login", { replace: true }); return; }
+
+                const query = new URLSearchParams({
+                    page: page.toString(),
+                    size: "10",
+                    sort: "id,asc",
+                    search: debouncedTerm
+                });
+
+                const res = await fetch(`${BACKEND_URL}/api/admin/venues?${query}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                if (!res.ok) throw new Error("Nepodařilo se načíst místa konání.");
+
+                const data: PageResponse<VenueDto> = await res.json();
+
+                if (page === 0) {
+                    setVenues(data.content);
+                } else {
+                    setVenues(prev => [...prev, ...data.content]);
+                }
+
+                setIsLastPage(data.last);
+
+            } catch (e: unknown) {
+                if (e instanceof Error) setError(e.message);
+                else setError("Došlo k neznámé chybě.");
+            } finally {
+                setLoading(false);
+                setLoadingMore(false);
+            }
+        };
+
+        fetchVenues();
+    }, [debouncedTerm, page, navigate]);
+
+    const handleLoadMore = () => {
+        setLoadingMore(true);
+        setPage(prev => prev + 1);
     };
 
-    useEffect(() => {
-        fetchVenues();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // 2. Logika filtrování
-    const filteredVenues = venues.filter(venue => {
-        if (!searchTerm) return true;
-        const lowerTerm = searchTerm.toLowerCase();
-
-        return (
-            venue.name.toLowerCase().includes(lowerTerm) ||
-            venue.address.toLowerCase().includes(lowerTerm) ||
-            venue.id.toString().includes(lowerTerm)
-        );
-    });
-
+    // Modal Actions
     const openModalForNew = () => {
         setEditingVenue(null);
         setFormData(initialFormData);
@@ -159,8 +196,17 @@ export default function AdminVenues() {
                 const errData = await res.json().catch(() => ({ message: "Neznámá chyba serveru" }));
                 throw new Error(errData.message || "Uložení se nezdařilo.");
             }
+
+            const savedVenue = await res.json();
             setIsModalOpen(false);
-            await fetchVenues();
+
+            // Aktualizace lokálního seznamu bez nutnosti reloadu
+            if (editingVenue) {
+                setVenues(prev => prev.map(v => v.id === savedVenue.id ? savedVenue : v));
+            } else {
+                setVenues(prev => [savedVenue, ...prev]);
+            }
+
         } catch (err: unknown) {
             if (err instanceof Error) alert(`Chyba: ${err.message}`);
             else alert("Došlo k neznámé chybě.");
@@ -179,7 +225,10 @@ export default function AdminVenues() {
                     const errData = await res.json().catch(() => ({ message: "Neznámá chyba serveru" }));
                     throw new Error(errData.message || "Smazání se nezdařilo.");
                 }
-                await fetchVenues();
+
+                // Odstranění z lokálního seznamu
+                setVenues(prev => prev.filter(v => v.id !== venueId));
+
             } catch (err: unknown) {
                 if (err instanceof Error) alert(`Chyba: ${err.message}`);
                 else alert("Došlo k neznámé chybě.");
@@ -187,16 +236,12 @@ export default function AdminVenues() {
         }
     };
 
-    if (loading) return <div>Načítám data...</div>;
-    if (error) return <div style={{ color: "#fca5a5" }}>{error}</div>;
-
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
                 <button style={primaryBtn} onClick={openModalForNew}>+ Přidat nové místo</button>
             </div>
 
-            {/* 3. Input pole pro hledání */}
             <input
                 type="text"
                 placeholder="Hledat místo podle názvu, adresy nebo ID..."
@@ -205,44 +250,59 @@ export default function AdminVenues() {
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
 
-            <div style={{ overflowX: "auto" }}>
-                <table style={table}>
-                    <thead>
-                    <tr>
-                        <th style={th}>ID</th>
-                        <th style={th}>Název</th>
-                        <th style={th}>Adresa</th>
-                        <th style={th}>Kapacita (Stání/Sezení)</th>
-                        <th style={th}>Akce</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {/* 4. Použití filtrovaného seznamu */}
-                    {filteredVenues.length > 0 ? (
-                        filteredVenues.map(venue => (
-                            <tr key={venue.id}>
-                                <td style={td}>{venue.id}</td>
-                                <td style={td}>{venue.name}</td>
-                                <td style={td}>{venue.address}</td>
-                                <td style={td}>{venue.standingCapacity} / {venue.sittingCapacity}</td>
-                                <td style={td}>
-                                    <div style={buttonBar}>
-                                        <button style={actionBtn} onClick={() => openModalForEdit(venue)}>Upravit</button>
-                                        <button style={dangerBtn} onClick={() => handleDelete(venue.id)}>Smazat</button>
-                                    </div>
+            {loading && page === 0 ? (
+                <div style={{textAlign: 'center', padding: 20}}>Načítám data...</div>
+            ) : error ? (
+                <div style={{ color: "#fca5a5" }}>{error}</div>
+            ) : (
+                <div style={{ overflowX: "auto" }}>
+                    <table style={table}>
+                        <thead>
+                        <tr>
+                            <th style={th}>ID</th>
+                            <th style={th}>Název</th>
+                            <th style={th}>Adresa</th>
+                            <th style={th}>Kapacita (Stání/Sezení)</th>
+                            <th style={th}>Akce</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {venues.length > 0 ? (
+                            venues.map(venue => (
+                                <tr key={venue.id}>
+                                    <td style={td}>{venue.id}</td>
+                                    <td style={td}>{venue.name}</td>
+                                    <td style={td}>{venue.address}</td>
+                                    <td style={td}>{venue.standingCapacity} / {venue.sittingCapacity}</td>
+                                    <td style={td}>
+                                        <div style={buttonBar}>
+                                            <button style={actionBtn} onClick={() => openModalForEdit(venue)}>Upravit</button>
+                                            <button style={dangerBtn} onClick={() => handleDelete(venue.id)}>Smazat</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan={5} style={{...td, textAlign: "center", color: "#a7b0c0", padding: 30}}>
+                                    {searchTerm ? `Žádné místo neodpovídá "${searchTerm}"` : "Žádná data."}
                                 </td>
                             </tr>
-                        ))
-                    ) : (
-                        <tr>
-                            <td colSpan={5} style={{...td, textAlign: "center", color: "#a7b0c0", padding: 30}}>
-                                {searchTerm ? `Žádné místo neodpovídá "${searchTerm}"` : "Žádná data."}
-                            </td>
-                        </tr>
+                        )}
+                        </tbody>
+                    </table>
+
+                    {!isLastPage && (
+                        <button
+                            onClick={handleLoadMore}
+                            style={loadMoreBtn}
+                            disabled={loadingMore}
+                        >
+                            {loadingMore ? "Načítám..." : "Načíst další místa"}
+                        </button>
                     )}
-                    </tbody>
-                </table>
-            </div>
+                </div>
+            )}
 
             {isModalOpen && (
                 <div style={modalOverlay} onClick={() => setIsModalOpen(false)}>
@@ -264,7 +324,14 @@ export default function AdminVenues() {
                                 </div>
                                 <div style={formField}>
                                     <label style={formLabel}>Kapacita sezení</label>
-                                    <input style={formInput} type="number" name="sittingCapacity" value={formData.sittingCapacity} onChange={handleFormChange} min="0" readOnly/>
+                                    <input
+                                        style={{ ...formInput, opacity: 0.6, cursor: "not-allowed", background: "rgba(0,0,0,0.2)" }}
+                                        type="number"
+                                        name="sittingCapacity"
+                                        value={formData.sittingCapacity}
+                                        readOnly
+                                    />
+                                    <div style={{fontSize: 11, color: "#64748b"}}>Vypočítáno automaticky z plánu.</div>
                                 </div>
                                 <div style={fullWidthField}>
                                     <label style={formLabel}>Plán sezení (Editor)</label>

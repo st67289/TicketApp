@@ -15,6 +15,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -103,6 +107,60 @@ class VenueServiceTest {
 
         assertEquals(1, list.size());
         assertEquals("Arena", list.get(0).getName());
+    }
+
+    // ========================
+    // FIND ALL (S VYHLEDÁVÁNÍM A STRÁNKOVÁNÍM)
+    // ========================
+    @Test
+    void findAll_ReturnsMappedPage() {
+        // Arrange
+        String searchTerm = "Arena";
+        Pageable pageable = PageRequest.of(0, 10);
+
+        Venue venue = new Venue();
+        venue.setId(1L);
+        venue.setName("O2 Arena");
+        venue.setAddress("Prague");
+
+        // Simulujeme, že repozitář vrátí stránku s jedním záznamem
+        Page<Venue> page = new PageImpl<>(List.of(venue));
+
+        when(venueRepository.findAllBySearch(eq(searchTerm), eq(pageable)))
+                .thenReturn(page);
+
+        // Act
+        Page<VenueDto> result = venueService.findAll(searchTerm, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements()); // Celkový počet
+        assertEquals(1, result.getContent().size()); // Počet na stránce
+
+        VenueDto dto = result.getContent().get(0);
+        assertEquals(1L, dto.getId());
+        assertEquals("O2 Arena", dto.getName());
+        assertEquals("Prague", dto.getAddress());
+
+        // Ověření, že se volala správná metoda repozitáře
+        verify(venueRepository).findAllBySearch(eq(searchTerm), eq(pageable));
+    }
+
+    @Test
+    void findAll_EmptyResult() {
+        // Arrange
+        String searchTerm = "NonExistent";
+        Pageable pageable = PageRequest.of(0, 10);
+
+        when(venueRepository.findAllBySearch(eq(searchTerm), eq(pageable)))
+                .thenReturn(Page.empty());
+
+        // Act
+        Page<VenueDto> result = venueService.findAll(searchTerm, pageable);
+
+        // Assert
+        assertTrue(result.isEmpty());
+        assertEquals(0, result.getTotalElements());
     }
 
     // ========================

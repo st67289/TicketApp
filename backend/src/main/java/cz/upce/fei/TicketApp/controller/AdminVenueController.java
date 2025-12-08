@@ -8,7 +8,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 
 @RestController
 @RequestMapping("/api/admin/venues")
@@ -24,8 +27,11 @@ public class AdminVenueController {
     }
 
     @GetMapping
-    public ResponseEntity<List<VenueDto>> getAllVenues() {
-        return ResponseEntity.ok(venueService.findAll());
+    public ResponseEntity<Page<VenueDto>> getAllVenues(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.ASC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(venueService.findAll(search, pageable));
     }
 
     @GetMapping("/{id}")
