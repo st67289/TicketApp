@@ -19,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.security.Principal;
 import java.util.List;
@@ -154,10 +156,9 @@ public class UserService {
     // ======================================================
 
     @Transactional(readOnly = true)
-    public List<UserAdminViewDto> findAllUsersForAdmin() {
-        return userRepository.findAll().stream()
-                .map(this::mapToUserAdminViewDto)
-                .toList();
+    public Page<UserAdminViewDto> findAllUsersForAdmin(String search, Pageable pageable) {
+        return userRepository.findAllBySearchTerm(search, pageable)
+                .map(this::mapToUserAdminViewDto);
     }
 
     @Transactional

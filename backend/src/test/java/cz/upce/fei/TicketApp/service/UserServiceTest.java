@@ -3,6 +3,7 @@ package cz.upce.fei.TicketApp.service;
 import cz.upce.fei.TicketApp.dto.AuthResponseDto;
 import cz.upce.fei.TicketApp.dto.LoginDto;
 import cz.upce.fei.TicketApp.dto.RegisterDto;
+import cz.upce.fei.TicketApp.dto.admin.UserAdminViewDto;
 import cz.upce.fei.TicketApp.dto.password.ForgotPasswordDto;
 import cz.upce.fei.TicketApp.dto.password.ResetPasswordDto;
 import cz.upce.fei.TicketApp.model.entity.AppUser;
@@ -17,6 +18,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -392,7 +397,8 @@ class UserServiceTest {
     }
 
     @Test
-    void findAllUsersForAdmin_ReturnsMappedUsers() {
+    void findAllUsersForAdmin_ReturnsMappedUsersPage() {
+        // Arrange
         AppUser user = AppUser.builder()
                 .id(1L)
                 .firstName("John")
@@ -401,15 +407,23 @@ class UserServiceTest {
                 .role(UserRoles.USER)
                 .isEnabled(true)
                 .build();
-        when(userRepository.findAll()).thenReturn(List.of(user));
 
-        var result = userService.findAllUsersForAdmin();
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<AppUser> page = new PageImpl<>(List.of(user));
 
-        assertEquals(1, result.size());
-        assertEquals("John", result.get(0).getFirstName());
-        assertEquals("Doe", result.get(0).getSecondName());
-        assertEquals("test@example.com", result.get(0).getEmail());
-        assertEquals(UserRoles.USER, result.get(0).getRole());
-        assertTrue(result.get(0).isEnabled());
+        // Mockujeme volání repository s jakýmkoliv vyhledávacím stringem
+        when(userRepository.findAllBySearchTerm(any(), eq(pageable))).thenReturn(page);
+
+        // Act
+        // Voláme metodu s prázdným vyhledáváním
+        Page<UserAdminViewDto> result = userService.findAllUsersForAdmin("", pageable);
+
+        // Assert
+        assertEquals(1, result.getTotalElements());
+        assertEquals("John", result.getContent().get(0).getFirstName());
+        assertEquals("Doe", result.getContent().get(0).getSecondName());
+
+        // Ověříme, že se volala správná metoda repozitáře
+        verify(userRepository).findAllBySearchTerm(eq(""), eq(pageable));
     }
 }

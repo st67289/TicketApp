@@ -3,11 +3,13 @@ package cz.upce.fei.TicketApp.controller;
 import cz.upce.fei.TicketApp.dto.admin.UserAdminViewDto;
 import cz.upce.fei.TicketApp.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -18,8 +20,11 @@ public class AdminController {
     private final UserService userService;
 
     @GetMapping("/users")
-    public ResponseEntity<List<UserAdminViewDto>> getAllUsers() {
-        return ResponseEntity.ok(userService.findAllUsersForAdmin());
+    public ResponseEntity<Page<UserAdminViewDto>> getAllUsers(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.ASC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(userService.findAllUsersForAdmin(search, pageable));
     }
 
     @PostMapping("/users/{id}/block")
