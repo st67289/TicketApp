@@ -79,6 +79,7 @@ public class UserService {
                 .email(email)
                 .passwordHash(passwordEncoder.encode(req.getPassword()))
                 .role(UserRoles.USER)
+                .isEnabled(true)
                 .build();
 
         userRepository.save(user);
