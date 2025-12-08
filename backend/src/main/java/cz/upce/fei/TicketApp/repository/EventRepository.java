@@ -24,9 +24,6 @@ public interface EventRepository
 
     List<Event> findAllByVenueId(Long venueId);
 
-    List<Event> findAllByStartTimeAfter(OffsetDateTime from);
-    List<Event> findAllByStartTimeBetween(OffsetDateTime from, OffsetDateTime to);
-
     // Spočítat počet akcí, které teprve budou
     long countByStartTimeAfter(OffsetDateTime now);
 
