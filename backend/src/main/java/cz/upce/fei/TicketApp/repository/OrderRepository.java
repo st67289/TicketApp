@@ -1,8 +1,9 @@
 package cz.upce.fei.TicketApp.repository;
 
 import cz.upce.fei.TicketApp.model.entity.Order;
-import cz.upce.fei.TicketApp.model.enums.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,5 +13,5 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findAllByAppUserId(Long userId);
 
-    List<Order> findAllByAppUserIdAndPaymentStatus(Long userId, OrderStatus status);
+    Page<Order> findAllByAppUserId(Long appUserId, Pageable pageable);
 }

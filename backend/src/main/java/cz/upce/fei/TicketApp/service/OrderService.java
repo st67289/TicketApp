@@ -9,6 +9,8 @@ import cz.upce.fei.TicketApp.repository.*;
 import cz.upce.fei.TicketApp.service.passwordReset.EmailService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -106,15 +108,12 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<OrderDto> getMyOrders(String email) {
+    public Page<OrderDto> getMyOrders(String email, Pageable pageable) {
         AppUser user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new EntityNotFoundException("Uživatel nenalezen"));
 
-        return orderRepository.findAllByAppUserId(user.getId()).stream()
-                // Seřadíme od nejnovější
-                .sorted(Comparator.comparing(Order::getCreatedAt).reversed())
-                .map(this::toOrderDto)
-                .collect(Collectors.toList());
+        return orderRepository.findAllByAppUserId(user.getId(), pageable)
+                .map(this::toOrderDto);
     }
 
     private OrderDto toOrderDto(Order order) {
