@@ -2,113 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import HeroSlider from "../components/HeroSlider";
-
-const wrap: React.CSSProperties = {
-    minHeight: "100dvh",
-    padding: "80px 24px 40px",
-    background: "linear-gradient(160deg,#0b0f1a,#181d2f)",
-    color: "#e6e9ef",
-    fontFamily: "Inter, system-ui, Segoe UI, Roboto, Arial",
-};
-
-const container: React.CSSProperties = { width: "min(1100px, 94vw)", margin: "0 auto" };
-
-const h1: React.CSSProperties = { margin: 0, fontSize: 28, fontWeight: 900, letterSpacing: .2 };
-const panel: React.CSSProperties = {
-    background: "rgba(255,255,255,.06)",
-    border: "1px solid rgba(255,255,255,.12)",
-    borderRadius: 18,
-    padding: 18,
-    backdropFilter: "saturate(140%) blur(10px)",
-    WebkitBackdropFilter: "saturate(140%) blur(10px)",
-    boxShadow: "0 10px 30px rgba(0,0,0,.35)",
-};
-
-const filtersGrid: React.CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "1.4fr 1.2fr 1fr 1fr 1fr auto",
-    gap: 12,
-    alignItems: "end",
-};
-
-const label: React.CSSProperties = { fontSize: 12, color: "#a7b0c0", marginBottom: 6, display: "block" };
-const input: React.CSSProperties = {
-    appearance: "none",
-    width: "100%",
-    padding: "10px 12px",
-    lineHeight: 1.25,
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,.18)",
-    background: "rgba(255,255,255,.06)",
-    color: "#e6e9ef",
-    outline: "none",
-} as const;
-const select = input;
-
-const rowBetween: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 12 };
-const radioRow: React.CSSProperties = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" };
-
-const ghostBtn: React.CSSProperties = {
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,.16)",
-    background: "rgba(255,255,255,.04)",
-    color: "#e6e9ef",
-    fontWeight: 700,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-};
-const primaryBtn: React.CSSProperties = {
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: 0,
-    background: "linear-gradient(135deg,#7c3aed,#22d3ee)",
-    color: "#fff",
-    fontWeight: 800,
-    letterSpacing: .2,
-    cursor: "pointer",
-    boxShadow: "0 10px 24px rgba(124,58,237,.35)",
-    whiteSpace: "nowrap",
-};
-
-const listGrid: React.CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))",
-    gap: 16,
-    marginTop: 16,
-};
-
-const card: React.CSSProperties = {
-    ...panel,
-    padding: 16,
-    display: "grid",
-    gridTemplateRows: "auto 1fr auto",
-    gap: 12,
-    height: "100%",
-};
-
-const optionStyle: React.CSSProperties = {
-    background: "#181d2f",
-    color: "#e6e9ef",
-};
-
-const rowTop: React.CSSProperties = { display: "grid", gap: 6 };
-const evName: React.CSSProperties = { fontWeight: 800, fontSize: 18, margin: 0 };
-const evTime: React.CSSProperties = { fontWeight: 200, fontSize: 14, margin: 0 };
-const meta: React.CSSProperties = { color: "#a7b0c0", fontSize: 13 };
-
-const tagRow: React.CSSProperties = { display: "flex", gap: 8, flexWrap: "wrap", alignContent: "flex-start" };
-const tag: React.CSSProperties = {
-    padding: "4px 8px",
-    borderRadius: 999,
-    border: "1px solid rgba(255,255,255,.16)",
-    background: "rgba(255,255,255,.05)",
-    fontSize: 12,
-    color: "#cfd6e4",
-};
-const actions: React.CSSProperties = { display: "flex", gap: 10, marginTop: 0 };
-
-const pagerRow: React.CSSProperties = { marginTop: 14, display: "flex", gap: 8, alignItems: "center", justifyContent: "space-between" };
+import styles from "./styles/EventsList.module.css"; // Import stylů
 
 const BACKEND_URL = "http://localhost:8080";
 
@@ -246,7 +140,6 @@ export default function EventsList() {
             setPageData(data);
             if (data.totalPages > 0 && page > data.totalPages) setPage(data.totalPages);
         } catch (e) {
-            // OPRAVA: Odstraněno :any, přidána typová kontrola
             if (e instanceof Error) {
                 setError(e.message);
             } else {
@@ -291,12 +184,12 @@ export default function EventsList() {
     const disableDateInputs = quick !== "none";
 
     return (
-        <div style={wrap}>
+        <div className={styles.wrap}>
             <Navbar />
 
-            <div style={container}>
+            <div className={styles.container}>
                 {/* HERO SLIDER */}
-                <div style={{ ...panel, padding: 0, marginBottom: 14 }}>
+                <div className={`${styles.panel} ${styles.heroPanel}`}>
                     <HeroSlider
                         slides={[
                             { image: "https://images.unsplash.com/photo-1506157786151-b8491531f063?q=80&w=1200&auto=format&fit=crop", title: "Top koncerty", subtitle: "Projeď si, co se chystá", ctaText: "Prohlédnout", to: "#seznam-akci" },
@@ -307,79 +200,112 @@ export default function EventsList() {
                 </div>
 
                 {/* FILTRY */}
-                <div style={{ ...panel, marginBottom: 14 }}>
-                    <h1 style={h1}>Akce a koncerty</h1>
+                <div className={styles.panel}>
+                    <h1 className={styles.h1}>Akce a koncerty</h1>
 
-                    <div style={filtersGrid}>
+                    <div className={styles.filtersGrid}>
                         <div>
-                            <label style={label}>Hledat</label>
-                            <input style={input} placeholder="např. Imagine Dragons…" value={q} onChange={e => setQ(e.target.value)} />
+                            <label className={styles.label}>Hledat</label>
+                            <input
+                                className={styles.input}
+                                placeholder="např. Imagine Dragons…"
+                                value={q}
+                                onChange={e => setQ(e.target.value)}
+                            />
                         </div>
 
                         <div>
-                            <label style={label}>Místo konání</label>
-                            <select style={select} value={venueId} onChange={e => setVenueId(e.target.value)}>
-                                <option style={optionStyle} value="">Všechna místa</option>
+                            <label className={styles.label}>Místo konání</label>
+                            <select
+                                className={styles.input}
+                                value={venueId}
+                                onChange={e => setVenueId(e.target.value)}
+                            >
+                                <option className={styles.option} value="">Všechna místa</option>
                                 {venues.map(v => (
-                                    <option key={v.id} style={optionStyle} value={v.id}>{v.name}</option>
+                                    <option key={v.id} className={styles.option} value={v.id}>{v.name}</option>
                                 ))}
                             </select>
                         </div>
 
                         <div>
-                            <label style={label}>Datum od</label>
-                            <input style={{ ...input, opacity: disableDateInputs ? .6 : 1 }} type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} disabled={disableDateInputs} />
+                            <label className={styles.label}>Datum od</label>
+                            <input
+                                className={styles.input}
+                                type="date"
+                                value={dateFrom}
+                                onChange={e => setDateFrom(e.target.value)}
+                                disabled={disableDateInputs}
+                            />
                         </div>
 
                         <div>
-                            <label style={label}>Datum do</label>
-                            <input style={{ ...input, opacity: disableDateInputs ? .6 : 1 }} type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} disabled={disableDateInputs} />
+                            <label className={styles.label}>Datum do</label>
+                            <input
+                                className={styles.input}
+                                type="date"
+                                value={dateTo}
+                                onChange={e => setDateTo(e.target.value)}
+                                disabled={disableDateInputs}
+                            />
                         </div>
 
                         <div>
-                            <label style={label}>Cena do</label>
-                            <input style={input} type="number" placeholder="Kč" min={0} value={priceMax} onChange={e => setPriceMax(e.target.value)} />
+                            <label className={styles.label}>Cena do</label>
+                            <input
+                                className={styles.input}
+                                type="number"
+                                placeholder="Kč"
+                                min={0}
+                                value={priceMax}
+                                onChange={e => setPriceMax(e.target.value)}
+                            />
                         </div>
 
                         <div>
-                            <label style={label}>Řazení</label>
-                            <select style={select} value={sort} onChange={e => setSort(e.target.value as SortKey)}>
-                                <option style={optionStyle} value="dateAsc">Datum ↑ </option>
-                                <option style={optionStyle} value="dateDesc">Datum ↓ </option>
-                                <option style={optionStyle} value="priceAsc">Cena ↑ </option>
-                                <option style={optionStyle} value="priceDesc">Cena ↓ </option>
+                            <label className={styles.label}>Řazení</label>
+                            <select
+                                className={styles.input}
+                                value={sort}
+                                onChange={e => setSort(e.target.value as SortKey)}
+                            >
+                                <option className={styles.option} value="dateAsc">Datum ↑ </option>
+                                <option className={styles.option} value="dateDesc">Datum ↓ </option>
+                                <option className={styles.option} value="priceAsc">Cena ↑ </option>
+                                <option className={styles.option} value="priceDesc">Cena ↓ </option>
                             </select>
                         </div>
                     </div>
 
-                    {/* RYCHLÉ OBDOBÍ */}
-                    <div style={rowBetween}>
-                        <div style={radioRow}>
-                            <label style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                    {/* RYCHLÉ OBDOBÍ & AKCE */}
+                    <div className={styles.filterBottomRow}>
+                        <div className={styles.radioGroup}>
+                            <label className={styles.radioLabel}>
                                 <input type="radio" name="quickRange" checked={quick === "none"} onChange={() => setQuick("none")} />
                                 Žádný
                             </label>
-                            <label style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                            <label className={styles.radioLabel}>
                                 <input type="radio" name="quickRange" checked={quick === "week"} onChange={() => setQuick("week")} />
                                 Tento týden
                             </label>
-                            <label style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                            <label className={styles.radioLabel}>
                                 <input type="radio" name="quickRange" checked={quick === "month"} onChange={() => setQuick("month")} />
                                 Tento měsíc
                             </label>
                         </div>
 
-                        <div style={{ display: "flex", gap: 8 }}>
-                            <button style={ghostBtn} onClick={resetFilters}>Vymazat filtry</button>
+                        <div className={styles.bottomActions}>
+                            <button className={`${styles.btn} ${styles.ghostBtn}`} onClick={resetFilters}>Vymazat filtry</button>
                             <select
-                                style={select}
+                                className={styles.input}
+                                style={{ width: "auto" }} // Override full width
                                 value={pageSize}
                                 onChange={e => setPageSize(Number(e.target.value))}
                                 aria-label="Počet na stránku"
                             >
-                                <option value={8}>8 / stránka</option>
-                                <option value={12}>12 / stránka</option>
-                                <option value={24}>24 / stránka</option>
+                                <option className={styles.option} value={8}>8 / stránka</option>
+                                <option className={styles.option} value={12}>12 / stránka</option>
+                                <option className={styles.option} value={24}>24 / stránka</option>
                             </select>
                         </div>
                     </div>
@@ -387,53 +313,75 @@ export default function EventsList() {
 
                 {/* LIST */}
                 {loading ? (
-                    <div style={{ ...panel, textAlign: "center" }}>Načítám…</div>
+                    <div className={`${styles.panel} ${styles.loadingText}`}>Načítám…</div>
                 ) : error ? (
-                    <div style={{ ...panel, color: "#fca5a5" }}>{error}</div>
+                    <div className={`${styles.panel} ${styles.errorText}`}>{error}</div>
                 ) : (
-                    <div style={{ ...panel }}>
+                    <div className={styles.panel}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, color: "#a7b0c0", fontSize: 13 }}>
                             <div>Nalezeno celkem: <strong>{pageData?.totalElements ?? 0}</strong></div>
                             <div>Stránka <strong>{(pageData?.number ?? 0) + 1}</strong> / {pageData?.totalPages ?? 1}</div>
                         </div>
 
-                        <div id="seznam-akci" style={{...listGrid, scrollMarginTop: "100px"}}>
+                        <div id="seznam-akci" className={styles.listGrid}>
                             {(pageData?.content?.length ?? 0) === 0 && (
-                                <div style={{ gridColumn: "1 / -1", color: "#a7b0c0" }}>Nic nenalezeno.</div>
+                                <div style={{ gridColumn: "1 / -1", color: "#a7b0c0", textAlign: "center", padding: 20 }}>
+                                    Nic nenalezeno.
+                                </div>
                             )}
 
                             {contentSorted.map(e => (
-                                <article key={e.id} style={card}>
-                                    <div style={rowTop}>
-                                        <h2 style={evName}>{e.name}</h2>
-                                        <h3 style={evTime}>{formatDate(e.startTime)}</h3>
-                                        <div style={meta}>{e.venue?.name ?? "—"}{e.venue?.address ? `, ${e.venue.address}` : ""}</div>
-                                    </div>
-
+                                <article key={e.id} className={`${styles.panel} ${styles.card}`}>
                                     <div>
-                                        <div style={tagRow}>
-                                            {typeof e.fromPrice === "number" && <span style={tag}>od {e.fromPrice.toFixed(0)} Kč</span>}
-                                            {e.hasSeating && <span style={tag}>Sezení</span>}
-                                            {e.hasStanding && <span style={tag}>Stání</span>}
-                                            <span style={tag}>{e.available}/{e.total} dostupných</span>
+                                        <h2 className={styles.evName}>{e.name}</h2>
+                                        <h3 className={styles.evTime}>{formatDate(e.startTime)}</h3>
+                                        <div className={styles.meta}>
+                                            {e.venue?.name ?? "—"}
+                                            {e.venue?.address ? `, ${e.venue.address}` : ""}
                                         </div>
                                     </div>
 
-                                    <div style={actions}>
-                                        <Link to={`/events/${e.id}`} style={{ ...ghostBtn, textDecoration: "none" }}>Detail</Link>
-                                        <button style={primaryBtn} onClick={() => nav(`/events/${e.id}`)}>Koupit vstupenky</button>
+                                    <div>
+                                        <div className={styles.tagRow}>
+                                            {typeof e.fromPrice === "number" && <span className={styles.tag}>od {e.fromPrice.toFixed(0)} Kč</span>}
+                                            {e.hasSeating && <span className={styles.tag}>Sezení</span>}
+                                            {e.hasStanding && <span className={styles.tag}>Stání</span>}
+                                            <span className={styles.tag}>{e.available}/{e.total} dostupných</span>
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.cardActions}>
+                                        <Link to={`/events/${e.id}`} className={`${styles.btn} ${styles.ghostBtn}`}>Detail</Link>
+                                        <button
+                                            className={`${styles.btn} ${styles.primaryBtn}`}
+                                            onClick={() => nav(`/events/${e.id}`)}
+                                        >
+                                            Koupit vstupenky
+                                        </button>
                                     </div>
                                 </article>
                             ))}
                         </div>
 
                         {(pageData?.totalPages ?? 1) > 1 && (
-                            <div style={pagerRow}>
-                                <button style={ghostBtn} disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Předchozí</button>
+                            <div className={styles.pagerRow}>
+                                <button
+                                    className={`${styles.btn} ${styles.ghostBtn}`}
+                                    disabled={page <= 1}
+                                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                                >
+                                    Předchozí
+                                </button>
                                 <div style={{ color: "#a7b0c0", fontSize: 13 }}>
                                     Stránka <strong>{page}</strong> / {pageData?.totalPages ?? 1}
                                 </div>
-                                <button style={ghostBtn} disabled={page >= (pageData?.totalPages ?? 1)} onClick={() => setPage(p => Math.min((pageData?.totalPages ?? 1), p + 1))}>Další</button>
+                                <button
+                                    className={`${styles.btn} ${styles.ghostBtn}`}
+                                    disabled={page >= (pageData?.totalPages ?? 1)}
+                                    onClick={() => setPage(p => Math.min((pageData?.totalPages ?? 1), p + 1))}
+                                >
+                                    Další
+                                </button>
                             </div>
                         )}
                     </div>

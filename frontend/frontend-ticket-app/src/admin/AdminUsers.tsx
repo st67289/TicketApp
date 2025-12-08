@@ -1,36 +1,6 @@
-// src/admin/AdminUsers.tsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-// Styly (beze změny)
-const table: React.CSSProperties = { width: "100%", borderCollapse: "collapse", marginTop: 16 };
-const th: React.CSSProperties = { padding: "12px 14px", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,.18)", color: "#a7b0c0", fontSize: 13, textTransform: "uppercase" };
-const td: React.CSSProperties = { padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,.08)", fontSize: 14 };
-const statusPill: React.CSSProperties = { padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, color: "#fff" };
-const activePill: React.CSSProperties = { ...statusPill, background: "rgba(34, 211, 238, .25)" };
-const blockedPill: React.CSSProperties = { ...statusPill, background: "rgba(255, 107, 107, .25)" };
-const actionBtn: React.CSSProperties = { padding: "8px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,.16)", background: "rgba(255,255,255,.04)", color: "#e6e9ef", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" };
-const dangerBtn: React.CSSProperties = { ...actionBtn, borderColor: "rgba(255, 107, 107, .35)", color: "#fca5a5" };
-
-const searchInput: React.CSSProperties = {
-    width: "100%",
-    padding: "12px 16px",
-    marginBottom: 20,
-    background: "rgba(0,0,0,0.3)",
-    border: "1px solid rgba(255,255,255,0.15)",
-    borderRadius: 12,
-    color: "#fff",
-    fontSize: 15,
-    outline: "none",
-    boxSizing: "border-box",
-    transition: "border-color 0.2s"
-};
-
-const loadMoreBtn: React.CSSProperties = {
-    display: "block", width: "100%", padding: "12px", marginTop: 20,
-    background: "rgba(34, 211, 238, 0.1)", border: "1px solid rgba(34, 211, 238, 0.3)",
-    borderRadius: 12, color: "#22d3ee", fontWeight: "bold", cursor: "pointer", fontSize: 15
-};
+import styles from "./styles/AdminUsers.module.css"; // Import stylů
 
 const BACKEND_URL = "http://localhost:8080";
 
@@ -45,7 +15,6 @@ type UserAdminViewDto = {
     oauthProvider: string | null;
 };
 
-// Typ pro stránkovanou odpověď
 type PageResponse<T> = {
     content: T[];
     last: boolean;
@@ -63,34 +32,32 @@ export default function AdminUsers() {
 
     // Stav vyhledávání a stránkování
     const [searchTerm, setSearchTerm] = useState("");
-    const [debouncedTerm, setDebouncedTerm] = useState(""); // Reálný termín pro API po prodlevě
+    const [debouncedTerm, setDebouncedTerm] = useState("");
     const [page, setPage] = useState(0);
     const [isLastPage, setIsLastPage] = useState(false);
 
-    // 1. Debounce logic - čeká 500ms po dopsání, než aktualizuje debouncedTerm
+    // 1. Debounce logic
     useEffect(() => {
         const handler = setTimeout(() => {
-            // DŮLEŽITÁ ZMĚNA: Kontrola, zda se hodnota opravdu změnila
             if (searchTerm !== debouncedTerm) {
                 setDebouncedTerm(searchTerm);
                 setPage(0);
-                setUsers([]); // Vyčistit jen pokud se změnilo hledání
+                setUsers([]);
             }
         }, 500);
 
         return () => clearTimeout(handler);
     }, [searchTerm, debouncedTerm]);
 
-    // 2. Načítání dat - reaguje na změnu stránky nebo změnu vyhledávaného výrazu
+    // 2. Načítání dat
     useEffect(() => {
         const fetchUsers = async () => {
-            if (page === 0) setLoading(true); // Jen při prvním načtení/hledání
+            if (page === 0) setLoading(true);
 
             try {
                 const token = localStorage.getItem("token");
                 if (!token) { navigate("/auth/login", { replace: true }); return; }
 
-                // Posíláme search parametr na backend
                 const query = new URLSearchParams({
                     page: page.toString(),
                     size: "20",
@@ -107,7 +74,6 @@ export default function AdminUsers() {
 
                 const data: PageResponse<UserAdminViewDto> = await res.json();
 
-                // Pokud je page 0, přepíšeme data. Jinak je připojíme (append).
                 if (page === 0) {
                     setUsers(data.content);
                 } else {
@@ -147,7 +113,6 @@ export default function AdminUsers() {
                     throw new Error(data?.message || 'Akce se nezdařila.');
                 }
 
-                // Aktualizujeme lokální stav bez nutnosti znovu načítat vše
                 setUsers(prev => prev.map(u =>
                     u.id === userId ? { ...u, enabled: !isCurrentlyEnabled } : u
                 ));
@@ -164,7 +129,7 @@ export default function AdminUsers() {
             <input
                 type="text"
                 placeholder="Hledat uživatele (jméno, email, ID, role)..."
-                style={searchInput}
+                className={styles.searchInput}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -174,31 +139,39 @@ export default function AdminUsers() {
             ) : error ? (
                 <div style={{ color: "#fca5a5" }}>{error}</div>
             ) : (
-                <div style={{ overflowX: "auto" }}>
-                    <table style={table}>
+                <>
+                    {/* --- TABLE FOR DESKTOP --- */}
+                    <table className={styles.desktopTable}>
                         <thead>
                         <tr>
-                            <th style={th}>ID</th>
-                            <th style={th}>Jméno</th>
-                            <th style={th}>Email</th>
-                            <th style={th}>Role</th>
-                            <th style={th}>Stav</th>
-                            <th style={th}>Zdroj</th>
-                            <th style={th}>Akce</th>
+                            <th className={styles.th}>ID</th>
+                            <th className={styles.th}>Jméno</th>
+                            <th className={styles.th}>Email</th>
+                            <th className={styles.th}>Role</th>
+                            <th className={styles.th}>Stav</th>
+                            <th className={styles.th}>Zdroj</th>
+                            <th className={styles.th}>Akce</th>
                         </tr>
                         </thead>
                         <tbody>
                         {users.length > 0 ? (
                             users.map(user => (
                                 <tr key={user.id}>
-                                    <td style={td}>{user.id}</td>
-                                    <td style={td}>{user.firstName} {user.secondName}</td>
-                                    <td style={td}>{user.email}</td>
-                                    <td style={td}>{user.role}</td>
-                                    <td style={td}><span style={user.enabled ? activePill : blockedPill}>{user.enabled ? 'Aktivní' : 'Blokován'}</span></td>
-                                    <td style={td}>{user.oauthProvider || 'Heslo'}</td>
-                                    <td style={td}>
-                                        <button style={user.enabled ? dangerBtn : actionBtn} onClick={() => handleToggleBlock(user.id, user.enabled)}>
+                                    <td className={styles.td}>{user.id}</td>
+                                    <td className={styles.td}>{user.firstName} {user.secondName}</td>
+                                    <td className={styles.td}>{user.email}</td>
+                                    <td className={styles.td}>{user.role}</td>
+                                    <td className={styles.td}>
+                                        <span className={`${styles.pill} ${user.enabled ? styles.pillActive : styles.pillBlocked}`}>
+                                            {user.enabled ? 'Aktivní' : 'Blokován'}
+                                        </span>
+                                    </td>
+                                    <td className={styles.td}>{user.oauthProvider || 'Heslo'}</td>
+                                    <td className={styles.td}>
+                                        <button
+                                            className={user.enabled ? styles.dangerBtn : styles.actionBtn}
+                                            onClick={() => handleToggleBlock(user.id, user.enabled)}
+                                        >
                                             {user.enabled ? 'Zablokovat' : 'Odblokovat'}
                                         </button>
                                     </td>
@@ -206,7 +179,7 @@ export default function AdminUsers() {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={7} style={{...td, textAlign: "center", color: "#a7b0c0", padding: 30}}>
+                                <td colSpan={7} className={styles.td} style={{textAlign: "center", color: "#a7b0c0", padding: 30}}>
                                     {searchTerm ? `Žádný uživatel neodpovídá "${searchTerm}"` : "Žádní uživatelé."}
                                 </td>
                             </tr>
@@ -214,17 +187,64 @@ export default function AdminUsers() {
                         </tbody>
                     </table>
 
+                    {/* --- LIST FOR MOBILE --- */}
+                    <div className={styles.mobileList}>
+                        {users.length > 0 ? (
+                            users.map(user => (
+                                <div key={user.id} className={styles.mobileCard}>
+                                    <div className={styles.cardHeader}>
+                                        <div>
+                                            <div className={styles.cardName}>{user.firstName} {user.secondName}</div>
+                                            <div className={styles.cardEmail}>{user.email}</div>
+                                        </div>
+                                        <span className={`${styles.pill} ${user.enabled ? styles.pillActive : styles.pillBlocked}`}>
+                                            {user.enabled ? 'Aktivní' : 'Blokován'}
+                                        </span>
+                                    </div>
+
+                                    <div className={styles.cardDetails}>
+                                        <div>
+                                            <span className={styles.detailLabel}>Role</span>
+                                            {user.role}
+                                        </div>
+                                        <div>
+                                            <span className={styles.detailLabel}>Zdroj</span>
+                                            {user.oauthProvider || 'Heslo'}
+                                        </div>
+                                        <div>
+                                            <span className={styles.detailLabel}>ID</span>
+                                            #{user.id}
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.cardActions}>
+                                        <button
+                                            className={user.enabled ? styles.dangerBtn : styles.actionBtn}
+                                            onClick={() => handleToggleBlock(user.id, user.enabled)}
+                                        >
+                                            {user.enabled ? 'Zablokovat' : 'Odblokovat'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div style={{textAlign: "center", color: "#a7b0c0", padding: 20}}>
+                                {searchTerm ? `Žádný uživatel neodpovídá "${searchTerm}"` : "Žádní uživatelé."}
+                            </div>
+                        )}
+                    </div>
+
                     {/* Tlačítko Načíst další */}
                     {!isLastPage && (
                         <button
                             onClick={handleLoadMore}
-                            style={loadMoreBtn}
+                            className={styles.loadMoreBtn}
                             disabled={loadingMore}
                         >
                             {loadingMore ? "Načítám..." : "Načíst další uživatele"}
                         </button>
                     )}
-                </div>
+                </>
             )}
         </div>
     );

@@ -1,0 +1,93 @@
+/* AdminStats.module.css */
+
+/* --- FORMULÁŘ --- */
+.formField {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.formLabel {
+    font-size: 13px;
+    color: #a7b0c0;
+    margin-left: 4px;
+    font-weight: 500;
+}
+
+.select {
+    appearance: none;
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+    color: #e6e9ef;
+    outline: none;
+    cursor: pointer;
+    font-size: 15px;
+    font-family: inherit;
+    transition: border-color 0.2s, background 0.2s;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23a7b0c0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 1rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+}
+
+.select:focus {
+    border-color: #22d3ee;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.option {
+    background: #181d2f;
+    color: #e6e9ef;
+}
+
+/* --- KONTEJNER GRAFU --- */
+.chartContainer {
+    margin-top: 30px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 24px;
+    height: 400px; /* Výška pro desktop */
+    position: relative; /* Pro centrování loaderu */
+}
+
+.chartTitle {
+    margin: 0 0 20px 0;
+    text-align: center;
+    color: #e6e9ef;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+/* --- STAVY (Loading / Empty) --- */
+.messageCenter {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a7b0c0;
+    font-size: 14px;
+}
+
+/* --- RESPONZIVITA (Mobil) --- */
+@media (max-width: 600px) {
+    .chartContainer {
+        height: 300px; /* Na mobilu menší graf */
+        padding: 10px 5px 10px 0; /* Menší padding, graf potřebuje místo */
+    }
+
+    .chartTitle {
+        font-size: 16px;
+        margin-bottom: 10px;
+    }
+
+    .formLabel {
+        font-size: 12px;
+    }
+}

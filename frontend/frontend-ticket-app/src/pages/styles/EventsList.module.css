@@ -1,0 +1,261 @@
+/* EventsList.module.css */
+
+.wrap {
+    min-height: 100dvh;
+    padding: 100px 24px 40px; /* Horní padding pro navbar */
+    background: linear-gradient(160deg, #0b0f1a, #181d2f);
+    color: #e6e9ef;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.container {
+    width: min(1100px, 94vw);
+    margin: 0 auto;
+}
+
+/* Společný styl pro panely (sklo) */
+.panel {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    padding: 18px;
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    margin-bottom: 14px;
+}
+
+/* Hero panel bez paddingu */
+.heroPanel {
+    padding: 0;
+}
+
+.h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 0.2px;
+    margin-bottom: 16px;
+}
+
+/* --- GRID FILTRŮ --- */
+.filtersGrid {
+    display: grid;
+    gap: 12px;
+    align-items: end;
+    /* Default (Mobil): Vše pod sebou */
+    grid-template-columns: 1fr;
+}
+
+/* Tablet: 2 sloupce */
+@media (min-width: 600px) {
+    .filtersGrid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Desktop: Původní layout (6 sloupců) */
+@media (min-width: 1100px) {
+    .filtersGrid {
+        grid-template-columns: 1.4fr 1.2fr 1fr 1fr 1fr auto;
+    }
+}
+
+/* Inputs & Selects */
+.label {
+    font-size: 12px;
+    color: #a7b0c0;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.input {
+    appearance: none;
+    width: 100%;
+    padding: 10px 12px;
+    line-height: 1.25;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+    color: #e6e9ef;
+    outline: none;
+    box-sizing: border-box; /* Aby padding nerozhodil šířku */
+}
+
+.input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.option {
+    background: #181d2f;
+    color: #e6e9ef;
+}
+
+/* Řádek s radio buttony a tlačítky dole */
+.filterBottomRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 20px;
+    flex-wrap: wrap; /* Aby se to na mobilu zalamovalo */
+}
+
+.radioGroup {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.radioLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.bottomActions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* --- Tlačítka --- */
+.btn {
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    font-family: inherit;
+    font-size: 14px;
+    text-align: center;
+    border: 0;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ghostBtn {
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.04);
+    color: #e6e9ef;
+    font-weight: 700;
+}
+.ghostBtn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+.ghostBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.primaryBtn {
+    background: linear-gradient(135deg, #7c3aed, #22d3ee);
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    box-shadow: 0 10px 24px rgba(124, 58, 237, 0.35);
+    flex: 1; /* Na kartě se roztáhne */
+}
+.primaryBtn:hover {
+    opacity: 0.9;
+}
+
+/* --- Grid Výsledků (Karty) --- */
+.listGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+    scroll-margin-top: 100px; /* Pro kotvu #seznam-akci */
+}
+
+/* Karta */
+.card {
+    padding: 16px;
+    display: grid;
+    grid-template-rows: auto 1fr auto; /* Hlavička, obsah, patička */
+    gap: 12px;
+    height: 100%;
+}
+
+.evName {
+    font-weight: 800;
+    font-size: 18px;
+    margin: 0;
+}
+.evTime {
+    font-weight: 200;
+    font-size: 14px;
+    margin: 0;
+}
+.meta {
+    color: #a7b0c0;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+/* Tagy */
+.tagRow {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-content: flex-start;
+}
+.tag {
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.05);
+    font-size: 12px;
+    color: #cfd6e4;
+}
+
+/* Akce karty */
+.cardActions {
+    display: flex;
+    gap: 10px;
+    margin-top: auto; /* Tlačítka vždy dole */
+}
+
+/* Paginace */
+.pagerRow {
+    margin-top: 14px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.loadingText, .errorText {
+    text-align: center;
+    padding: 20px;
+    color: #a7b0c0;
+}
+.errorText {
+    color: #fca5a5;
+}
+
+/* Úprava pro mobil */
+@media (max-width: 600px) {
+    .wrap {
+        padding: 80px 16px 20px;
+    }
+
+    .filterBottomRow {
+        flex-direction: column;
+        align-items: stretch; /* Tlačítka přes celou šířku */
+    }
+
+    .radioGroup {
+        justify-content: space-between; /* Rozprostřít radio buttony */
+    }
+
+    .bottomActions {
+        justify-content: space-between;
+    }
+}

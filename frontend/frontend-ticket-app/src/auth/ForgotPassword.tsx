@@ -1,113 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-
-const wrap: React.CSSProperties = {
-    minHeight: "100dvh",
-    display: "grid",
-    placeItems: "center",
-    padding: "40px",
-    background: "linear-gradient(160deg,#0b0f1a,#181d2f)",
-    color: "#e6e9ef",
-    fontFamily: "Inter, system-ui, Segoe UI, Roboto, Arial",
-};
-
-const card: React.CSSProperties = {
-    width: "min(560px, 92vw)",
-    background: "rgba(255,255,255,.06)",
-    border: "1px solid rgba(255,255,255,.12)",
-    borderRadius: 18,
-    padding: 28,
-    backdropFilter: "saturate(140%) blur(10px)",
-    WebkitBackdropFilter: "saturate(140%) blur(10px)",
-    boxShadow: "0 10px 30px rgba(0,0,0,.35)",
-};
-
-const title: React.CSSProperties = {
-    margin: 0,
-    fontSize: 24,
-    fontWeight: 700,
-    letterSpacing: .2,
-};
-
-const subtitle: React.CSSProperties = {
-    marginTop: 6,
-    marginBottom: 18,
-    color: "#a7b0c0",
-    fontSize: 14,
-};
-
-const form: React.CSSProperties = {
-    display: "grid",
-    gap: 14,
-};
-
-const label: React.CSSProperties = {
-    fontSize: 13,
-    color: "#a7b0c0",
-};
-
-const input: React.CSSProperties = {
-    appearance: "none",
-    width: "100%",
-    padding: "14px 16px",
-    lineHeight: 1.25,
-    borderRadius: 14,
-    border: "1px solid rgba(255,255,255,.18)",
-    background: "rgba(255,255,255,.06)",
-    color: "#e6e9ef",
-    outline: "none",
-} as const;
-
-const row2: React.CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 14,
-};
-
-const button: React.CSSProperties = {
-    marginTop: 4,
-    padding: "14px 18px",
-    border: 0,
-    borderRadius: 14,
-    cursor: "pointer",
-    color: "#fff",
-    fontWeight: 700,
-    letterSpacing: .2,
-    background: "linear-gradient(135deg,#7c3aed,#22d3ee)",
-    boxShadow: "0 10px 24px rgba(124,58,237,.35)",
-};
-
-const link: React.CSSProperties = {
-    color: "#22d3ee",
-    textDecoration: "none",
-    borderBottom: "1px dashed transparent",
-};
-
-const note: React.CSSProperties = {
-    marginTop: 8,
-    fontSize: 13,
-    color: "#a7b0c0",
-};
-
-const errorBox: React.CSSProperties = {
-    marginTop: 4,
-    background: "rgba(255,107,107,.12)",
-    border: "1px solid rgba(255,107,107,.35)",
-    color: "#e6e9ef",
-    padding: "10px 12px",
-    borderRadius: 12,
-    fontSize: 14,
-};
-
-const okBox: React.CSSProperties = {
-    marginTop: 4,
-    background: "rgba(34,211,238,.10)",
-    border: "1px solid rgba(34,211,238,.35)",
-    color: "#e6e9ef",
-    padding: "10px 12px",
-    borderRadius: 12,
-    fontSize: 14,
-};
+import styles from "./styles/ForgotPassword.module.css"; // Import stylů
 
 const BACKEND_URL = "http://localhost:8080";
 
@@ -176,21 +69,21 @@ export default function ForgotPassword() {
     };
 
     return (
-        <div style={wrap}>
-            <div style={card}>
+        <div className={styles.wrap}>
+            <div className={styles.card}>
                 {step === "request" ? (
                     <>
-                        <h1 style={title}>Zapomenuté heslo</h1>
-                        <p style={subtitle}>Zadej svůj e-mail a pošleme ti ověřovací kód.</p>
+                        <h1 className={styles.title}>Zapomenuté heslo</h1>
+                        <p className={styles.subtitle}>Zadej svůj e-mail a pošleme ti ověřovací kód.</p>
 
-                        {err && <div style={errorBox}>{err}</div>}
-                        {ok && <div style={okBox}>{ok}</div>}
+                        {err && <div className={styles.errorBox}>⚠️ {err}</div>}
+                        {ok && <div className={styles.okBox}>✅ {ok}</div>}
 
-                        <form style={form} onSubmit={handleRequest} noValidate>
+                        <form className={styles.form} onSubmit={handleRequest} noValidate>
                             <div>
-                                <div style={label}>E-mail</div>
+                                <label className={styles.label}>E-mail</label>
                                 <input
-                                    style={input}
+                                    className={styles.input}
                                     type="email"
                                     placeholder="jan.novak@email.cz"
                                     value={email}
@@ -200,29 +93,31 @@ export default function ForgotPassword() {
                                 />
                             </div>
 
-                            <button style={button} disabled={loading}>
+                            <button className={styles.button} disabled={loading}>
                                 {loading ? "Odesílám…" : "Poslat kód"}
                             </button>
                         </form>
 
-                        <p style={note}>
+                        <p className={styles.note}>
                             Pamatuješ si heslo?{" "}
-                            <Link to="/auth/login" style={link}>Zpět na přihlášení</Link>
+                            <Link to="/auth/login" className={styles.link}>Zpět na přihlášení</Link>
                         </p>
                     </>
                 ) : (
                     <>
-                        <h1 style={title}>Obnovit heslo</h1>
-                        <p style={subtitle}>Zadej kód z e-mailu a nové heslo pro účet <strong>{email}</strong>.</p>
+                        <h1 className={styles.title}>Obnovit heslo</h1>
+                        <p className={styles.subtitle}>
+                            Zadej kód z e-mailu a nové heslo pro účet <strong>{email}</strong>.
+                        </p>
 
-                        {err && <div style={errorBox}>{err}</div>}
-                        {ok && <div style={okBox}>{ok}</div>}
+                        {err && <div className={styles.errorBox}>⚠️ {err}</div>}
+                        {ok && <div className={styles.okBox}>✅ {ok}</div>}
 
-                        <form style={form} onSubmit={handleReset} noValidate>
+                        <form className={styles.form} onSubmit={handleReset} noValidate>
                             <div>
-                                <div style={label}>Ověřovací kód</div>
+                                <label className={styles.label}>Ověřovací kód</label>
                                 <input
-                                    style={input}
+                                    className={styles.input}
                                     placeholder="Zadej kód"
                                     value={code}
                                     onChange={e => setCode(e.target.value)}
@@ -231,11 +126,11 @@ export default function ForgotPassword() {
                                 />
                             </div>
 
-                            <div style={row2}>
+                            <div className={styles.passwordRow}>
                                 <div>
-                                    <div style={label}>Nové heslo</div>
+                                    <label className={styles.label}>Nové heslo</label>
                                     <input
-                                        style={input}
+                                        className={styles.input}
                                         type="password"
                                         placeholder="••••••••"
                                         value={newPassword}
@@ -246,9 +141,9 @@ export default function ForgotPassword() {
                                     />
                                 </div>
                                 <div>
-                                    <div style={label}>Potvrzení hesla</div>
+                                    <label className={styles.label}>Potvrzení hesla</label>
                                     <input
-                                        style={input}
+                                        className={styles.input}
                                         type="password"
                                         placeholder="••••••••"
                                         value={confirm}
@@ -260,23 +155,23 @@ export default function ForgotPassword() {
                                 </div>
                             </div>
 
-                            <button style={button} disabled={loading}>
+                            <button className={styles.button} disabled={loading}>
                                 {loading ? "Ukládám…" : "Změnit heslo"}
                             </button>
                         </form>
 
-                        <p style={note}>
+                        <p className={styles.note}>
                             Kód nedorazil? Zkontroluj spam nebo{" "}
                             <button
                                 onClick={() => { setStep("request"); setOk(""); setErr(""); }}
-                                style={{ ...link, background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                                className={styles.textBtn}
                             >
                                 požádej znovu
                             </button>.
                         </p>
 
-                        <p style={note}>
-                            <Link to="/auth/login" style={link}>Zpět na přihlášení</Link>
+                        <p className={styles.note}>
+                            <Link to="/auth/login" className={styles.link}>Zpět na přihlášení</Link>
                         </p>
                     </>
                 )}

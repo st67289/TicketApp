@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import styles from "./Register.module.css";
+import styles from "./styles/Register.module.css";
 
 const BACKEND_URL = "http://localhost:8080";
 

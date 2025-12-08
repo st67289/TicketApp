@@ -1,0 +1,211 @@
+/* MyOrders.module.css */
+
+.wrap {
+    min-height: 100dvh;
+    padding: 100px 24px 40px; /* Horní padding kvůli navbaru */
+    background: linear-gradient(160deg, #0b0f1a, #181d2f);
+    color: #e6e9ef;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.container {
+    width: min(900px, 94vw);
+    margin: 0 auto;
+}
+
+/* Panel */
+.panel {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    padding: 24px;
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* Hlavička stránky (Nadpis + Odkaz) */
+.pageHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 10px;
+}
+
+.h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+}
+
+.linkButton {
+    color: #22d3ee;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    transition: color 0.2s;
+    white-space: nowrap;
+}
+.linkButton:hover {
+    color: #67e8f9;
+    text-decoration: underline;
+}
+
+/* Vyhledávací pole */
+.searchInput {
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+.searchInput:focus {
+    border-color: #22d3ee;
+}
+
+/* Karta objednávky */
+.orderCard {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.cardHeaderRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Zarovnat nahoru */
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+    gap: 12px;
+}
+
+.orderId {
+    color: #a7b0c0;
+    font-size: 13px;
+    display: block;
+}
+
+.orderDate {
+    font-weight: bold;
+    font-size: 16px;
+    margin-top: 2px;
+}
+
+.statusBadge {
+    background: #10b981;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+.totalPrice {
+    margin-top: 4px;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+/* Seznam položek v objednávce */
+.itemList {
+    display: grid;
+    gap: 8px;
+}
+
+.itemRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #cbd5e1;
+    gap: 16px; /* Mezera mezi názvem a cenou */
+}
+
+.itemType {
+    color: #64748b;
+    font-size: 0.9em;
+    margin-left: 4px;
+}
+
+/* Tlačítko Načíst další */
+.loadMoreBtn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    background: rgba(34, 211, 238, 0.1);
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    border-radius: 12px;
+    color: #22d3ee;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background 0.2s;
+}
+.loadMoreBtn:hover {
+    background: rgba(34, 211, 238, 0.15);
+}
+.loadMoreBtn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+/* Prázdné stavy a warningy */
+.emptyState {
+    color: #a7b0c0;
+    text-align: center;
+    padding: 40px;
+}
+.searchWarning {
+    text-align: center;
+    color: #a7b0c0;
+    margin-top: 20px;
+    font-size: 13px;
+}
+
+/* Loading stav */
+.loadingWrapper {
+    min-height: 100dvh;
+    padding-top: 150px;
+    text-align: center;
+    background: linear-gradient(160deg, #0b0f1a, #181d2f);
+    color: #e6e9ef;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* --- RESPONZIVITA (Mobil) --- */
+@media (max-width: 600px) {
+    .wrap {
+        padding: 85px 16px 20px;
+    }
+
+    /* Nadpis a odkaz pod sebe */
+    .pageHeader {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .h1 {
+        font-size: 24px;
+    }
+
+    .panel {
+        padding: 16px;
+    }
+
+    /* U položek povolíme zalamování textu */
+    .itemRow {
+        align-items: flex-start;
+    }
+}

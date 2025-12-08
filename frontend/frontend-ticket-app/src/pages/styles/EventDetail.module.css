@@ -1,0 +1,324 @@
+/* EventDetail.module.css */
+
+.wrap {
+    min-height: 100dvh;
+    padding: 80px 24px 40px;
+    background: linear-gradient(160deg, #0b0f1a, #181d2f);
+    color: #e6e9ef;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.container {
+    width: min(1000px, 94vw);
+    margin: 0 auto;
+    display: grid;
+    gap: 24px;
+}
+
+/* Panely */
+.panel {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    padding: 24px;
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.h1 {
+    margin: 0 0 10px 0;
+    font-size: 28px;
+    font-weight: 800;
+}
+
+.meta {
+    color: #a7b0c0;
+    margin-bottom: 20px;
+    font-size: 14px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap; /* Aby se na mobilu zalomilo */
+}
+
+.description {
+    line-height: 1.6;
+    color: #cfd6e4;
+}
+
+/* Sekce nadpisů uvnitř panelu */
+.sectionTitle {
+    margin-top: 0;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+/* --- NOTIFIKACE --- */
+.notification {
+    padding: 16px 20px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid transparent;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.error {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+}
+
+.success {
+    background: rgba(34, 211, 238, 0.15);
+    border-color: rgba(34, 211, 238, 0.3);
+    color: #22d3ee;
+}
+
+.closeBtn {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 0 0 16px;
+    font-weight: bold;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- VSTUPENKY NA STÁNÍ --- */
+.standingRow {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.priceTag {
+    font-size: 24px;
+    font-weight: 800;
+    color: #22d3ee;
+}
+
+.qtyWrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.inputQty {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+    width: 60px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* --- MAPA SEDADEL --- */
+.mapWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+
+    /* KLÍČOVÉ PRO MOBIL: Umožní scrollovat mapou do stran */
+    overflow-x: auto;
+
+    /* Aby se mapa nezužovala pod minimální velikost */
+    min-width: 0;
+}
+
+/* Podium */
+.podium {
+    width: 60%;
+    min-width: 200px; /* Aby nebylo na mobilu moc úzké */
+    height: 30px;
+    background: #333;
+    border-radius: 0 0 30px 30px;
+    margin-bottom: 20px;
+    text-align: center;
+    line-height: 30px;
+    font-size: 11px;
+    color: #666;
+    letter-spacing: 2px;
+}
+
+/* Řádek sedadel */
+.rowFlex {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    /* Zajistí, že se řada nezalomí, ale roztáhne kontejner pro scroll */
+    white-space: nowrap;
+}
+
+.rowLabel {
+    width: 20px;
+    text-align: center;
+    line-height: 32px;
+    font-size: 12px;
+    color: #666;
+    flex-shrink: 0; /* Štítek se nesmí zmenšit */
+}
+
+/* Samotné sedadlo */
+.seat {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    transition: all 0.2s;
+    flex-shrink: 0; /* Sedadla se nesmí deformovat */
+}
+
+/* Stavy sedadel */
+.seatFree {
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.seatFree:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.seatTaken {
+    cursor: not-allowed;
+    background: #333;
+    color: #555;
+    border: 1px solid #333;
+}
+
+.seatSelected {
+    cursor: pointer;
+    background: #22d3ee;
+    color: #000;
+    border: 0;
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.4);
+}
+
+/* Legenda pod mapou */
+.legend {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+    font-size: 12px;
+    color: #aaa;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* --- TLAČÍTKA --- */
+.btnPrimary {
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: 0;
+    background: linear-gradient(135deg, #7c3aed, #22d3ee);
+    color: #fff;
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 16px;
+    transition: opacity 0.2s;
+}
+
+.btnPrimary:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+/* Speciální třída pro zakázaný stav (Admin) */
+.btnDisabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    filter: grayscale(100%);
+}
+
+.btnRight {
+    text-align: right;
+    margin-top: 20px;
+}
+
+/* Loading / Error states */
+.loadingContainer {
+    min-height: 100dvh;
+    padding: 100px 24px 40px;
+    text-align: center;
+    background: linear-gradient(160deg, #0b0f1a, #181d2f);
+    color: #e6e9ef;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+.errorText {
+    color: #fca5a5;
+}
+
+/* Nápověda pro posouvání (defaultně skrytá) */
+.mobileHint {
+    display: none;
+    text-align: center;
+    color: #22d3ee; /* Použijeme tvou zvýrazňovací barvu */
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    animation: pulse 2s infinite ease-in-out;
+}
+
+/* Animace blikání */
+@keyframes pulse {
+    0% { opacity: 0.5; transform: scale(0.98); }
+    50% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0.5; transform: scale(0.98); }
+}
+
+/* --- RESPONZIVITA (Mobil) --- */
+@media (max-width: 600px) {
+    /* ... (tvé existující úpravy pro wrap, btnPrimary atd.) ... */
+
+    /* Zobrazíme nápovědu */
+    .mobileHint {
+        display: block;
+    }
+
+    /* Zmenšení sedaček (jak jsme si říkali minule, doporučuji nechat) */
+    .seat {
+        width: 26px;
+        height: 26px;
+        font-size: 9px;
+        border-radius: 4px;
+    }
+    .rowLabel {
+        width: 16px;
+        line-height: 26px;
+        font-size: 10px;
+    }
+    .rowFlex {
+        gap: 4px;
+    }
+    .mapWrapper {
+        padding: 16px 0;
+    }
+}

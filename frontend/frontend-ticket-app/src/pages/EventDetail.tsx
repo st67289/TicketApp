@@ -1,39 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-
-// =================================================================
-// STYLY
-// =================================================================
-const wrap: React.CSSProperties = { minHeight: "100dvh", padding: "80px 24px 40px", background: "linear-gradient(160deg,#0b0f1a,#181d2f)", color: "#e6e9ef", fontFamily: "Inter, sans-serif" };
-const container: React.CSSProperties = { width: "min(1000px, 94vw)", margin: "0 auto", display: "grid", gap: 24 };
-const panel: React.CSSProperties = { background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24, backdropFilter: "blur(10px)" };
-const h1: React.CSSProperties = { margin: "0 0 10px 0", fontSize: 28, fontWeight: 800 };
-const meta: React.CSSProperties = { color: "#a7b0c0", marginBottom: 20, fontSize: 14, display: "flex", gap: 12, alignItems: "center" };
-
-const notificationBase: React.CSSProperties = { padding: "16px 20px", borderRadius: 12, marginBottom: 0, display: "flex", justifyContent: "space-between", alignItems: "center", border: "1px solid transparent", animation: "fadeIn 0.3s ease-in-out" };
-const errorStyle: React.CSSProperties = { ...notificationBase, background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5" };
-const successStyle: React.CSSProperties = { ...notificationBase, background: "rgba(34, 211, 238, 0.15)", border: "1px solid rgba(34, 211, 238, 0.3)", color: "#22d3ee" };
-const closeBtn: React.CSSProperties = { background: "transparent", border: 0, color: "inherit", fontSize: 20, cursor: "pointer", padding: "0 0 0 16px", fontWeight: "bold" };
-
-const mapWrapper: React.CSSProperties = { display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: 24, background: "rgba(0,0,0,0.2)", borderRadius: 16, overflowX: "auto" };
-const rowFlex: React.CSSProperties = { display: "flex", gap: 6, justifyContent: "center" };
-
-const seatBox = (status: "free" | "taken" | "selected"): React.CSSProperties => ({
-    width: 32, height: 32, borderRadius: 6,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: 11, fontWeight: 700,
-    cursor: status === "taken" ? "not-allowed" : "pointer",
-    background: status === "taken" ? "#333" : (status === "selected" ? "#22d3ee" : "rgba(255,255,255,0.05)"),
-    color: status === "selected" ? "#000" : (status === "taken" ? "#555" : "#fff"),
-    border: status === "selected" ? "0" : (status === "taken" ? "1px solid #333" : "1px solid rgba(255,255,255,0.2)"),
-    boxShadow: status === "selected" ? "0 0 15px rgba(34,211,238,0.4)" : "none",
-    transition: "all 0.2s"
-});
-
-const loadingStyle: React.CSSProperties = { ...wrap, padding: "100px 24px 40px", textAlign: "center" };
-const btnPrimary: React.CSSProperties = { padding: "12px 24px", borderRadius: 12, border: 0, background: "linear-gradient(135deg,#7c3aed,#22d3ee)", color: "#fff", fontWeight: 800, cursor: "pointer", fontSize: 16, marginTop: 16 };
-const inputQty: React.CSSProperties = { padding: "10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(0,0,0,0.3)", color: "white", width: 60, textAlign: "center", fontSize: 16, fontWeight: "bold" };
+import styles from "./styles/EventDetail.module.css"; // Importujeme styly
 
 const BACKEND_URL = "http://localhost:8080";
 
@@ -143,10 +111,9 @@ export default function EventDetail() {
                     const msg = json.detail || json.title || "Některá sedadla jsou již obsazena.";
                     setNotification({ type: "error", message: msg });
 
-                    // --- ZMĚNA: Deselect all (vymazat výběr) ---
+                    // Deselect all
                     setSelectedSeatIds([]);
-
-                    loadData(); // Obnovit mapu (aby se ukázalo, co je nově zabrané)
+                    loadData(); // Refresh mapy
                     return;
                 }
             }
@@ -183,23 +150,36 @@ export default function EventDetail() {
         catch { return <div style={{color:"#fca5a5"}}>Chyba v datech mapy (neplatný JSON).</div>; }
 
         return (
-            <div style={mapWrapper}>
-                <div style={{width: "60%", height: 30, background: "#333", borderRadius: "0 0 30px 30px", marginBottom: 20, textAlign: "center", lineHeight: "30px", fontSize: 11, color: "#666", letterSpacing: 2}}>PODIUM</div>
+            <div className={styles.mapWrapper}>
+                <div className={styles.podium}>PODIUM</div>
+                <div className={styles.mobileHint}>
+                    ↔️ Tažením do stran zobrazíte další místa
+                </div>
                 {rowsDef.map((rowDef, i) => {
                     const rowSeats = venueSeats
                         .filter(s => s.seatRow === rowDef.label)
                         .sort((a, b) => parseInt(a.seatNumber) - parseInt(b.seatNumber));
                     if (rowSeats.length === 0) return null;
                     return (
-                        <div key={i} style={rowFlex}>
-                            <div style={{width: 20, textAlign: "center", lineHeight: "32px", fontSize: 12, color: "#666"}}>{rowDef.label}</div>
+                        <div key={i} className={styles.rowFlex}>
+                            <div className={styles.rowLabel}>{rowDef.label}</div>
                             {rowSeats.map(seat => {
                                 const isTaken = occupiedIds.includes(seat.id);
                                 const isSelected = selectedSeatIds.includes(seat.id);
-                                const status = isTaken ? "taken" : (isSelected ? "selected" : "free");
+
+                                // Výběr správné třídy podle stavu
+                                let seatClass = styles.seat;
+                                if (isTaken) seatClass += ` ${styles.seatTaken}`;
+                                else if (isSelected) seatClass += ` ${styles.seatSelected}`;
+                                else seatClass += ` ${styles.seatFree}`;
+
                                 return (
-                                    <div key={seat.id} style={{ ...seatBox(status), cursor: (isTaken || isAdmin) ? "not-allowed" : "pointer" }}
-                                         onClick={() => !isTaken && toggleSeat(seat.id)}>
+                                    <div
+                                        key={seat.id}
+                                        className={seatClass}
+                                        style={{ cursor: (isTaken || isAdmin) ? "not-allowed" : "pointer" }}
+                                        onClick={() => !isTaken && toggleSeat(seat.id)}
+                                    >
                                         {seat.seatNumber}
                                     </div>
                                 );
@@ -207,61 +187,96 @@ export default function EventDetail() {
                         </div>
                     );
                 })}
-                <div style={{display: "flex", gap: 20, marginTop: 20, fontSize: 12, color: "#aaa"}}>
-                    <div style={{display: "flex", alignItems: "center", gap: 6}}><div style={seatBox("free")}></div> Volné</div>
-                    <div style={{display: "flex", alignItems: "center", gap: 6}}><div style={seatBox("taken")}></div> Obsazené</div>
-                    <div style={{display: "flex", alignItems: "center", gap: 6}}><div style={seatBox("selected")}></div> Vybrané</div>
+
+                <div className={styles.legend}>
+                    <div className={styles.legendItem}>
+                        <div className={`${styles.seat} ${styles.seatFree}`}></div> Volné
+                    </div>
+                    <div className={styles.legendItem}>
+                        <div className={`${styles.seat} ${styles.seatTaken}`}></div> Obsazené
+                    </div>
+                    <div className={styles.legendItem}>
+                        <div className={`${styles.seat} ${styles.seatSelected}`}></div> Vybrané
+                    </div>
                 </div>
             </div>
         );
     };
 
-    if (loading) return <div style={loadingStyle}>Načítám detail akce...</div>;
-    if (error || !event) return <div style={{...loadingStyle, color: "#fca5a5"}}>Chyba: {error}</div>;
+    if (loading) return <div className={styles.loadingContainer}>Načítám detail akce...</div>;
+    if (error || !event) return <div className={styles.loadingContainer}><span className={styles.errorText}>Chyba: {error}</span></div>;
+
+    // Pomocná třída pro disabled tlačítka
+    const getBtnClass = (disabled: boolean) =>
+        `${styles.btnPrimary} ${disabled || isAdmin ? styles.btnDisabled : ''}`;
 
     return (
-        <div style={wrap}>
+        <div className={styles.wrap}>
             <Navbar />
-            <div style={container}>
+            <div className={styles.container}>
                 {notification && (
-                    <div style={notification.type === 'error' ? errorStyle : successStyle}>
+                    <div className={`${styles.notification} ${notification.type === 'error' ? styles.error : styles.success}`}>
                         <span>{notification.type === 'error' ? '⚠️ ' : '✅ '} {notification.message}</span>
-                        <button style={closeBtn} onClick={() => setNotification(null)}>×</button>
+                        <button className={styles.closeBtn} onClick={() => setNotification(null)}>×</button>
                     </div>
                 )}
-                <div style={panel}>
-                    <h1 style={h1}>{event.name}</h1>
-                    <div style={meta}>
+
+                <div className={styles.panel}>
+                    <h1 className={styles.h1}>{event.name}</h1>
+                    <div className={styles.meta}>
                         <span>🗓 {new Date(event.startTime).toLocaleString("cs-CZ")}</span>
                         <span>📍 {event.venue.name}, {event.venue.address}</span>
                     </div>
-                    <p style={{lineHeight: 1.6, color: "#cfd6e4"}}>{event.description || "Bez popisu"}</p>
+                    <p className={styles.description}>{event.description || "Bez popisu"}</p>
                 </div>
+
                 {event.standingPrice && (
-                    <div style={panel}>
-                        <h2 style={{marginTop: 0, fontSize: 20}}>Vstupenky na stání</h2>
-                        <div style={{display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", marginTop: 16}}>
-                            <div style={{fontSize: 24, fontWeight: 800, color: "#22d3ee"}}>{event.standingPrice} Kč</div>
-                            <div style={{display: "flex", alignItems: "center", gap: 10}}>
+                    <div className={styles.panel}>
+                        <h2 className={styles.sectionTitle}>Vstupenky na stání</h2>
+                        <div className={styles.standingRow}>
+                            <div className={styles.priceTag}>{event.standingPrice} Kč</div>
+                            <div className={styles.qtyWrapper}>
                                 <span style={{fontSize: 14, color: "#a7b0c0"}}>Počet:</span>
-                                <input type="number" min={1} max={10} style={inputQty} value={standingQty} onChange={e => setStandingQty(Number(e.target.value))} disabled={isAdmin} />
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={10}
+                                    className={styles.inputQty}
+                                    value={standingQty}
+                                    onChange={e => setStandingQty(Number(e.target.value))}
+                                    disabled={isAdmin}
+                                />
                             </div>
-                            <button style={{ ...btnPrimary, marginTop: 0, opacity: isAdmin ? 0.5 : 1, cursor: isAdmin ? "not-allowed" : "pointer", filter: isAdmin ? "grayscale(100%)" : "none" }}
-                                    onClick={() => handleAddToCart("STANDING")} disabled={adding || isAdmin}>
+                            <button
+                                className={getBtnClass(adding)}
+                                onClick={() => handleAddToCart("STANDING")}
+                                disabled={adding || isAdmin}
+                            >
                                 {isAdmin ? "Admin nemůže nakupovat" : (adding ? "Čekejte..." : "Do košíku")}
                             </button>
                         </div>
                     </div>
                 )}
+
                 {event.seatingPrice && (
-                    <div style={panel}>
-                        <h2 style={{marginTop: 0, fontSize: 20}}>Vstupenky na sezení</h2>
-                        <p style={{color: "#a7b0c0", marginBottom: 20}}>Vyberte místo na plánku sálu. Cena: <strong style={{color: "#fff"}}>{event.seatingPrice} Kč</strong></p>
+                    <div className={styles.panel}>
+                        <h2 className={styles.sectionTitle}>Vstupenky na sezení</h2>
+                        <p style={{color: "#a7b0c0", marginBottom: 20}}>
+                            Vyberte místo na plánku sálu. Cena: <strong style={{color: "#fff"}}>{event.seatingPrice} Kč</strong>
+                        </p>
+
                         {renderMap()}
-                        <div style={{textAlign: "right", marginTop: 20}}>
-                            <button style={{ ...btnPrimary, opacity: (selectedSeatIds.length > 0 && !isAdmin) ? 1 : 0.5, cursor: (selectedSeatIds.length > 0 && !isAdmin) ? "pointer" : "not-allowed", filter: isAdmin ? "grayscale(100%)" : "none" }}
-                                    disabled={selectedSeatIds.length === 0 || adding || isAdmin} onClick={() => handleAddToCart("SEATING")}>
-                                {isAdmin ? "Admin nemůže nakupovat" : (adding ? "Zpracovávám..." : (selectedSeatIds.length > 0 ? `Koupit ${selectedSeatIds.length} vybraná místa` : "Vyberte místa na mapě"))}
+
+                        <div className={styles.btnRight}>
+                            <button
+                                className={getBtnClass(selectedSeatIds.length === 0 || adding)}
+                                disabled={selectedSeatIds.length === 0 || adding || isAdmin}
+                                onClick={() => handleAddToCart("SEATING")}
+                            >
+                                {isAdmin ? "Admin nemůže nakupovat" : (
+                                    adding ? "Zpracovávám..." :
+                                        (selectedSeatIds.length > 0 ? `Koupit ${selectedSeatIds.length} vybraná místa` : "Vyberte místa na mapě")
+                                )}
                             </button>
                         </div>
                     </div>

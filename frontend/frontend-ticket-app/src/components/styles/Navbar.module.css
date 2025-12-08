@@ -1,0 +1,144 @@
+/* Navbar.module.css */
+
+/* Hlavní kontejner */
+.navContainer {
+    position: fixed;
+    inset: 14px 14px auto 14px; /* Stejné jako tvůj původní styl */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    color: #e6e9ef;
+    z-index: 50;
+    transition: all 0.3s ease;
+}
+
+/* Logo / Brand */
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    text-decoration: none;
+    color: #e6e9ef;
+}
+
+/* Odkazy (Desktop) */
+.navLinks {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Hamburger menu (na PC skryté) */
+.hamburger {
+    display: none;
+    background: none;
+    border: none;
+    color: #e6e9ef;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+/* --- Tlačítka (Pills) --- */
+
+/* Základní styl pro všechny odkazy */
+.pill {
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.05);
+    color: #e6e9ef;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap; /* Aby se text nezalamoval */
+    transition: background 0.2s;
+}
+
+.pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Primary (Login/Logout) */
+.primary {
+    background: linear-gradient(135deg, #7c3aed, #22d3ee);
+    border: 0;
+    font-weight: 700;
+}
+.primary:hover {
+    opacity: 0.9;
+}
+
+/* Cart */
+.cart {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(34, 211, 238, 0.1);
+    border-color: rgba(34, 211, 238, 0.3);
+    color: #22d3ee;
+}
+
+/* Admin */
+.admin {
+    border-color: rgba(124, 58, 237, 0.5);
+    color: #c4b5fd;
+}
+
+/* --- RESPONZIVITA (Mobil) --- */
+@media (max-width: 768px) {
+    .navContainer {
+        /* Na mobilu trochu zmenšíme odsazení od krajů */
+        inset: 10px 10px auto 10px;
+    }
+
+    /* Zobrazíme hamburger tlačítko */
+    .hamburger {
+        display: block;
+    }
+
+    /* Předěláme .navLinks na vysouvací menu */
+    .navLinks {
+        position: absolute;
+        top: 100%; /* Hned pod navbarem */
+        left: 0;
+        right: 0;
+        margin-top: 10px;
+
+        flex-direction: column; /* Položky pod sebou */
+        background: #0f141f; /* Tmavé pozadí (musí být neprůhledné, aby bylo čitelné) */
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 15px;
+
+        /* Skrytí menu */
+        display: none;
+    }
+
+    /* Třída, která se přidá, když je menu otevřené */
+    .navLinks.open {
+        display: flex;
+        animation: slideDown 0.3s ease forwards;
+    }
+
+    /* Aby tlačítka na mobilu byla přes celou šířku */
+    .pill {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

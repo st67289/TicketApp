@@ -1,52 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import Navbar from "../components/Navbar";
-
-const wrap: React.CSSProperties = {
-    minHeight: "100dvh",
-    padding: "80px 24px 40px",
-    background: "linear-gradient(160deg,#0b0f1a,#181d2f)",
-    color: "#e6e9ef",
-    fontFamily: "Inter, system-ui, Segoe UI, Roboto, Arial",
-};
-
-const container: React.CSSProperties = { width: "min(700px, 94vw)", margin: "0 auto" };
-const panel: React.CSSProperties = {
-    background: "rgba(255,255,255,.06)",
-    border: "1px solid rgba(255,255,255,.12)",
-    borderRadius: 18,
-    padding: 24,
-    backdropFilter: "saturate(140%) blur(10px)",
-    WebkitBackdropFilter: "saturate(140%) blur(10px)",
-    boxShadow: "0 10px 30px rgba(0,0,0,.35)",
-};
-const h1: React.CSSProperties = { margin: "0 0 20px", fontSize: 30, fontWeight: 900 };
-const label: React.CSSProperties = { fontSize: 12, color: "#a7b0c0", marginBottom: 4, display: "block" };
-const input: React.CSSProperties = {
-    appearance: "none",
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,.18)",
-    background: "rgba(255,255,255,.06)",
-    color: "#e6e9ef",
-    marginBottom: 14,
-    outline: "none",
-};
-const primaryBtn: React.CSSProperties = {
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: 0,
-    background: "linear-gradient(135deg,#7c3aed,#22d3ee)",
-    color: "#fff",
-    fontWeight: 800,
-    letterSpacing: 0.2,
-    cursor: "pointer",
-    boxShadow: "0 10px 24px rgba(124,58,237,.35)",
-    marginTop: 10,
-    width: "100%",
-};
-const ghostText: React.CSSProperties = { color: "#a7b0c0", fontSize: 14, marginTop: 6 };
+import styles from "./Profile.module.css"; // Import stylů
 
 const BACKEND_URL = "http://localhost:8080";
 
@@ -126,20 +81,18 @@ export default function Profile() {
 
     if (loading)
         return (
-            <div style={wrap}>
+            <div className={styles.loadingWrapper}>
                 <Navbar />
-                <div style={container}>
-                    <div style={panel}>Načítám profil...</div>
-                </div>
+                <div>Načítám profil...</div>
             </div>
         );
 
     if (!user)
         return (
-            <div style={wrap}>
+            <div className={styles.loadingWrapper}>
                 <Navbar />
-                <div style={container}>
-                    <div style={panel}>{msg || "Chyba načítání"}</div>
+                <div className={styles.msg} style={{ color: "#fca5a5" }}>
+                    {msg || "Chyba načítání"}
                 </div>
             </div>
         );
@@ -147,61 +100,62 @@ export default function Profile() {
     const days = daysSince(user.createdAt);
 
     return (
-        <div style={wrap}>
+        <div className={styles.wrap}>
             <Navbar />
-            <div style={container}>
-                <div style={panel}>
-                    <h1 style={h1}>Můj profil</h1>
+            <div className={styles.container}>
+                <div className={styles.panel}>
+                    <h1 className={styles.h1}>Můj profil</h1>
 
-                    <label style={label}>Jméno</label>
+                    <label className={styles.label}>Jméno</label>
                     <input
-                        style={input}
+                        className={styles.input}
                         value={user.firstName}
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
                             setUser({ ...user, firstName: e.target.value })
                         }
                     />
 
-                    <label style={label}>Příjmení</label>
+                    <label className={styles.label}>Příjmení</label>
                     <input
-                        style={input}
+                        className={styles.input}
                         value={user.secondName}
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
                             setUser({ ...user, secondName: e.target.value })
                         }
                     />
 
-                    <label style={label}>Datum narození</label>
+                    <label className={styles.label}>Datum narození</label>
                     <input
                         type="date"
-                        style={input}
+                        className={styles.input}
                         value={user.birthDate}
                         onChange={(e: ChangeEvent<HTMLInputElement>) =>
                             setUser({ ...user, birthDate: e.target.value })
                         }
                     />
 
-                    <label style={label}>Email (nelze změnit)</label>
-                    <input style={{ ...input, opacity: 0.6 }} value={user.email} disabled />
+                    <label className={styles.label}>Email (nelze změnit)</label>
+                    <input
+                        className={styles.input}
+                        value={user.email}
+                        disabled
+                    />
 
-                    <div style={ghostText}>Role: <strong>{user.role}</strong></div>
+                    <div className={styles.ghostText}>
+                        Role: <strong>{user.role}</strong>
+                    </div>
 
-                    <div style={{ ...ghostText, marginTop: 12, fontSize: 16 }}>
-                        Jsi s námi už <strong style={{ color: "#fff" }}>{days}</strong> dní 🎉
+                    <div className={styles.daysText}>
+                        Jsi s námi už <strong className={styles.highlight}>{days}</strong> dní 🎉
                     </div>
 
                     {msg && (
-                        <div
-                            style={{
-                                ...ghostText,
-                                color: msg === "Uloženo ✔" ? "#4ade80" : "#fca5a5"
-                            }}
-                        >
+                        <div className={`${styles.msg} ${msg === "Uloženo ✔" ? styles.success : styles.error}`}>
                             {msg}
                         </div>
                     )}
 
-                    <button style={primaryBtn} onClick={save}>Uložit změny</button>
+                    <button className={styles.primaryBtn} onClick={save}>Uložit změny</button>
                 </div>
             </div>
         </div>

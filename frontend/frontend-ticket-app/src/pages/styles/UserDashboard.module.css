@@ -1,0 +1,250 @@
+/* UserDashboard.module.css */
+
+/* Hlavní obal stránky */
+.wrapper {
+    min-height: 100dvh;
+    padding: 100px 24px 40px; /* Horní padding kvůli fixnímu navbaru */
+    background: linear-gradient(160deg, #0b0f1a, #181d2f);
+    color: #e6e9ef;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.container {
+    width: min(1100px, 94vw);
+    margin: 0 auto;
+}
+
+/* --- Sekce HLAVIČKA (Vítej + Statistiky) --- */
+.headerRow {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr; /* Poměr panelu uvítání vs statistiky */
+    gap: 16px;
+    margin-bottom: 30px;
+}
+
+/* Základní styl pro "skleněné" panely */
+.panel {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    padding: 22px;
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* Specifické úpravy pro Uvítací panel */
+.welcomePanel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.title {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+}
+
+.subtitle {
+    margin: 8px 0 20px;
+    color: #a7b0c0;
+    font-size: 14px;
+}
+
+.buttonGroup {
+    display: flex;
+    gap: 10px;
+}
+
+/* --- Mřížka Statistik --- */
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.statCard {
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-decoration: none;
+    color: #e6e9ef;
+    transition: transform 0.2s, background 0.2s;
+    height: 100%; /* Aby byly stejně vysoké */
+    box-sizing: border-box;
+}
+
+.statCard:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Třetí karta (nastavení) s jinou barvou */
+.settingsCard {
+    border-color: rgba(34, 211, 238, 0.3);
+    background: rgba(34, 211, 238, 0.05);
+    cursor: pointer;
+}
+
+.statNum {
+    font-size: 28px;
+    font-weight: 800;
+}
+
+.statLabel {
+    color: #a7b0c0;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+/* --- Sekce SEZNAM AKCÍ --- */
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.sectionTitle {
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0;
+}
+
+.viewAllLink {
+    color: #22d3ee;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.listGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.emptyState {
+    grid-column: 1 / -1;
+    color: #a7b0c0;
+    padding: 20px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+}
+
+/* Karta akce */
+.eventCard {
+    padding: 16px;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 12px;
+    height: 100%;
+}
+
+.eventName {
+    font-weight: 800;
+    font-size: 18px;
+    margin: 0;
+}
+
+.eventTime {
+    font-weight: 200;
+    font-size: 14px;
+    margin: 0;
+}
+
+.meta {
+    color: #a7b0c0;
+    font-size: 13px;
+}
+
+/* Tagy */
+.tagRow {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-content: flex-start;
+}
+
+.tag {
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.05);
+    font-size: 12px;
+    color: #cfd6e4;
+}
+
+/* Akce (tlačítka dole na kartě) */
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+}
+
+/* --- Tlačítka --- */
+.btn {
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    text-align: center;
+    flex: 1; /* Aby zabírala stejnou šířku */
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    font-family: inherit;
+}
+
+.ghostBtn {
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.04);
+    color: #e6e9ef;
+    font-weight: 700;
+}
+.ghostBtn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.primaryBtn {
+    background: linear-gradient(135deg, #7c3aed, #22d3ee);
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    box-shadow: 0 10px 24px rgba(124, 58, 237, 0.35);
+}
+.primaryBtn:hover {
+    opacity: 0.9;
+}
+
+/* --- RESPONZIVITA (Mobil & Tablet) --- */
+@media (max-width: 900px) {
+    .headerRow {
+        grid-template-columns: 1fr; /* Pod sebe */
+    }
+}
+
+@media (max-width: 600px) {
+    .wrapper {
+        padding: 85px 16px 20px; /* Menší padding na mobilu */
+    }
+
+    .title {
+        font-size: 22px;
+    }
+
+    .statsGrid {
+        grid-template-columns: 1fr; /* Statistiky pod sebou na malém mobilu */
+    }
+
+    .listGrid {
+        grid-template-columns: 1fr; /* Karty akcí přes celou šířku */
+    }
+}

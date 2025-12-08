@@ -1,0 +1,188 @@
+/* AdminUsers.module.css */
+
+/* --- VYHLEDÁVÁNÍ --- */
+.searchInput {
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+    border-color: #22d3ee;
+}
+
+/* --- TLAČÍTKA --- */
+.actionBtn {
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.04);
+    color: #e6e9ef;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+.actionBtn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.dangerBtn {
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 107, 107, 0.35);
+    background: rgba(255, 255, 255, 0.04);
+    color: #fca5a5;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+.dangerBtn:hover {
+    background: rgba(255, 107, 107, 0.1);
+}
+
+.loadMoreBtn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    background: rgba(34, 211, 238, 0.1);
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    border-radius: 12px;
+    color: #22d3ee;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background 0.2s;
+}
+.loadMoreBtn:hover {
+    background: rgba(34, 211, 238, 0.15);
+}
+.loadMoreBtn:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+/* --- STAVOVÉ "PILULKY" --- */
+.pill {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    display: inline-block;
+}
+
+.pillActive {
+    background: rgba(34, 211, 238, 0.25);
+    color: #22d3ee; /* Volitelné: barva textu ladící s pozadím */
+}
+
+.pillBlocked {
+    background: rgba(255, 107, 107, 0.25);
+    color: #fca5a5;
+}
+
+/* --- TABULKA (Desktop) --- */
+.desktopTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+}
+
+.th {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    color: #a7b0c0;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+/* --- KARTY (Mobil) --- */
+.mobileList {
+    display: none; /* Defaultně skryté */
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.mobileCard {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.cardName {
+    font-weight: 700;
+    font-size: 16px;
+    color: #fff;
+}
+
+.cardEmail {
+    font-size: 13px;
+    color: #a7b0c0;
+    margin-top: 2px;
+}
+
+.cardDetails {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    font-size: 13px;
+    color: #cbd5e1;
+}
+
+.detailLabel {
+    color: #64748b;
+    font-size: 12px;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.cardActions {
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 12px;
+    margin-top: 4px;
+}
+
+/* --- RESPONZIVITA --- */
+@media (max-width: 768px) {
+    .desktopTable {
+        display: none; /* Skryjeme tabulku */
+    }
+
+    .mobileList {
+        display: flex; /* Zobrazíme karty */
+    }
+}

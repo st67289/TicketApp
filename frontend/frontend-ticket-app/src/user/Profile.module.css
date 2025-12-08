@@ -1,0 +1,148 @@
+/* Profile.module.css */
+
+.wrap {
+    min-height: 100dvh;
+    padding: 120px 24px 40px; /* Padding nahoře kvůli Navbaru */
+    background: linear-gradient(160deg, #0b0f1a, #181d2f);
+    color: #e6e9ef;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.container {
+    width: min(700px, 94vw); /* Responzivní šířka */
+    margin: 0 auto;
+}
+
+/* Panel / Karta */
+.panel {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    padding: 24px;
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.h1 {
+    margin: 0 0 20px;
+    font-size: 30px;
+    font-weight: 900;
+}
+
+/* Formulářové prvky */
+.label {
+    font-size: 12px;
+    color: #a7b0c0;
+    margin-bottom: 6px;
+    display: block;
+    font-weight: 500;
+}
+
+.input {
+    appearance: none;
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+    color: #e6e9ef;
+    margin-bottom: 16px;
+    outline: none;
+    box-sizing: border-box; /* Důležité, aby padding nerozhodil šířku */
+    transition: border-color 0.2s, background 0.2s;
+    font-family: inherit;
+    font-size: 15px;
+}
+
+.input:focus {
+    border-color: #22d3ee;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Tlačítko */
+.primaryBtn {
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 0;
+    background: linear-gradient(135deg, #7c3aed, #22d3ee);
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    box-shadow: 0 10px 24px rgba(124, 58, 237, 0.35);
+    margin-top: 10px;
+    width: 100%;
+    font-size: 16px;
+    transition: opacity 0.2s, transform 0.1s;
+}
+
+.primaryBtn:hover {
+    opacity: 0.9;
+}
+
+.primaryBtn:active {
+    transform: scale(0.98);
+}
+
+/* Texty */
+.ghostText {
+    color: #a7b0c0;
+    font-size: 14px;
+    margin-top: 6px;
+}
+
+.daysText {
+    margin-top: 12px;
+    font-size: 16px;
+    color: #a7b0c0;
+}
+
+.highlight {
+    color: #fff;
+    font-weight: bold;
+}
+
+/* Zprávy o stavu */
+.msg {
+    margin-top: 10px;
+    font-weight: 600;
+    font-size: 14px;
+}
+.success { color: #4ade80; }
+.error { color: #fca5a5; }
+
+/* Loading stav */
+.loadingWrapper {
+    min-height: 100dvh;
+    padding-top: 120px;
+    text-align: center;
+    background: linear-gradient(160deg, #0b0f1a, #181d2f);
+    color: #e6e9ef;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* --- RESPONZIVITA (Mobil) --- */
+@media (max-width: 600px) {
+    .wrap {
+        padding: 90px 16px 20px; /* Menší padding na mobilu */
+    }
+
+    .panel {
+        padding: 20px; /* Trochu menší padding uvnitř karty */
+    }
+
+    .h1 {
+        font-size: 26px;
+    }
+
+    .input {
+        font-size: 16px; /* Prevence zoomování na iOS */
+    }
+}

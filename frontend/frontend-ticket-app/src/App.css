@@ -3,14 +3,9 @@ body {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-
-    /* Doporučuji nastavit i barvu pozadí body na stejnou tmavou,
-       jako máš v aplikaci. Zabrání to bílému probliknutí při načítání
-       nebo při "overscroll" efektu na mobilech. */
     background-color: #0b0f1a;
 }
 
-/* Dobrá praxe pro React aplikace - aby root div zabíral celou výšku */
 #root {
     min-height: 100vh;
 }
