@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,14 +28,12 @@ public class TicketService {
      * Vrátí seznam lístků pro daného uživatele (podle emailu)
      */
     @Transactional(readOnly = true)
-    public List<TicketDto> getMyTickets(String email) {
-        List<Ticket> tickets = ticketRepository.findAllByOrderAppUserEmailAndStatusIn(
+    public Page<TicketDto> getMyTickets(String email, Pageable pageable) {
+        return ticketRepository.findAllByOrderAppUserEmailAndStatusIn(
                 email,
-                List.of(TicketStatus.ISSUED, TicketStatus.USED)
-        );
-        return tickets.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+                List.of(TicketStatus.ISSUED, TicketStatus.USED),
+                pageable
+        ).map(this::toDto);
     }
 
     /**

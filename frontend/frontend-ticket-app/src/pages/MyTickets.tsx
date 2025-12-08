@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AuthImage from "../components/AuthImage";
 
 // Styly (konzistentní)
@@ -9,19 +9,9 @@ const container: React.CSSProperties = { width: "min(900px, 94vw)", margin: "0 a
 const panel: React.CSSProperties = { background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24, backdropFilter: "blur(10px)" };
 const h1: React.CSSProperties = { marginTop: 0, fontSize: 28, fontWeight: 800 };
 
-// Styl vyhledávacího pole (stejný jako u objednávek)
 const searchInput: React.CSSProperties = {
-    width: "100%",
-    padding: "12px 16px",
-    marginBottom: 24,
-    background: "rgba(0,0,0,0.3)",
-    border: "1px solid rgba(255,255,255,0.15)",
-    borderRadius: 12,
-    color: "#fff",
-    fontSize: 15,
-    outline: "none",
-    boxSizing: "border-box",
-    transition: "border-color 0.2s"
+    width: "100%", padding: "12px 16px", marginBottom: 24, background: "rgba(0,0,0,0.3)",
+    border: "1px solid rgba(255,255,255,0.15)", borderRadius: 12, color: "#fff", fontSize: 15, outline: "none", boxSizing: "border-box", transition: "border-color 0.2s"
 };
 
 const grid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16, marginTop: 20 };
@@ -30,48 +20,20 @@ const card: React.CSSProperties = { background: "rgba(0,0,0,0.2)", borderRadius:
 const label: React.CSSProperties = { fontSize: 12, color: "#a7b0c0", textTransform: "uppercase", letterSpacing: 0.5 };
 const value: React.CSSProperties = { fontSize: 15, fontWeight: 600, color: "#fff" };
 
-// Styl pro tlačítko stažení PDF
 const pdfBtn: React.CSSProperties = {
-    marginTop: 8,
-    width: "100%",
-    padding: "8px",
-    borderRadius: 8,
-    border: "1px solid rgba(255,255,255,0.2)",
-    background: "transparent",
-    color: "#e6e9ef",
-    cursor: "pointer",
-    fontSize: 13,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    transition: "background 0.2s"
+    marginTop: 8, width: "100%", padding: "8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)",
+    background: "transparent", color: "#e6e9ef", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "background 0.2s"
 };
 
-const modalOverlay: React.CSSProperties = {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0, 0, 0, 0.85)", // Tmavé pozadí
-    backdropFilter: "blur(5px)",
-    zIndex: 1000,
-    display: "grid",
-    placeItems: "center",
-    cursor: "zoom-out"
+// Tlačítko pro načtení dalších
+const loadMoreBtn: React.CSSProperties = {
+    display: "block", width: "100%", padding: "12px", marginTop: 30,
+    background: "rgba(34, 211, 238, 0.1)", border: "1px solid rgba(34, 211, 238, 0.3)",
+    borderRadius: 12, color: "#22d3ee", fontWeight: "bold", cursor: "pointer", fontSize: 15
 };
 
-const modalContent: React.CSSProperties = {
-    background: "white",
-    padding: 20,
-    borderRadius: 16,
-    boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
-    maxWidth: "90vw",
-    maxHeight: "90vh",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 10,
-    cursor: "default"
-};
+const modalOverlay: React.CSSProperties = { position: "fixed", inset: 0, background: "rgba(0, 0, 0, 0.85)", backdropFilter: "blur(5px)", zIndex: 1000, display: "grid", placeItems: "center", cursor: "zoom-out" };
+const modalContent: React.CSSProperties = { background: "white", padding: 20, borderRadius: 16, boxShadow: "0 20px 50px rgba(0,0,0,0.5)", maxWidth: "90vw", maxHeight: "90vh", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, cursor: "default" };
 
 const BACKEND_URL = "http://localhost:8080";
 
@@ -88,11 +50,27 @@ type TicketDto = {
     seatNumber?: string;
 };
 
+// Typ pro Spring Page
+type PageResponse<T> = {
+    content: T[];
+    last: boolean;
+    totalPages: number;
+    totalElements: number;
+    number: number;
+};
+
 export default function MyTickets() {
     const [tickets, setTickets] = useState<TicketDto[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [zoomedTicket, setZoomedTicket] = useState<TicketDto | null>(null);
-    const [searchTerm, setSearchTerm] = useState(""); // 1. State pro hledání
+    const [searchTerm, setSearchTerm] = useState("");
+
+    // Stavy pro stránkování
+    const [page, setPage] = useState(0);
+    const [isLastPage, setIsLastPage] = useState(false);
+
+    const navigate = useNavigate();
 
     //Uzavření rozkliklého qr kodu přes Esc
     useEffect(() => {
@@ -101,26 +79,47 @@ export default function MyTickets() {
         return () => window.removeEventListener("keydown", handleEsc);
     }, []);
 
-    useEffect(() => {
-        const fetchTickets = async () => {
-            const token = localStorage.getItem("token");
-            try {
-                const res = await fetch(`${BACKEND_URL}/api/tickets/me`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    setTickets(await res.json());
-                }
-            } catch (e) {
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchTickets();
-    }, []);
+    const fetchTickets = async (pageNumber: number) => {
+        const token = localStorage.getItem("token");
+        if (!token) { navigate("/auth/login"); return; }
 
-    // 2. Logika filtrování
+        try {
+            // Přidáme parametry page a size
+            const res = await fetch(`${BACKEND_URL}/api/tickets/me?page=${pageNumber}&size=20`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data: PageResponse<TicketDto> = await res.json();
+
+                if (pageNumber === 0) {
+                    setTickets(data.content);
+                } else {
+                    setTickets(prev => [...prev, ...data.content]);
+                }
+
+                setIsLastPage(data.last);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+            setLoadingMore(false);
+        }
+    };
+
+    // Prvotní načtení
+    useEffect(() => {
+        fetchTickets(0);
+    }, [navigate]);
+
+    const handleLoadMore = () => {
+        setLoadingMore(true);
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchTickets(nextPage);
+    };
+
+    // Logika filtrování (POZOR: filtruje jen načtené)
     const filteredTickets = tickets.filter(t => {
         if (!searchTerm) return true;
         const lowerTerm = searchTerm.toLowerCase();
@@ -128,11 +127,11 @@ export default function MyTickets() {
         const seatInfo = t.type === "STANDING" ? "na stání" : `řada ${t.seatRow} místo ${t.seatNumber}`;
 
         return (
-            t.eventName.toLowerCase().includes(lowerTerm) ||       // Název akce
-            t.venue.name.toLowerCase().includes(lowerTerm) ||      // Název místa
-            t.ticketCode.toLowerCase().includes(lowerTerm) ||      // Kód vstupenky
-            dateStr.includes(lowerTerm) ||                         // Datum
-            seatInfo.includes(lowerTerm)                           // Typ místa
+            t.eventName.toLowerCase().includes(lowerTerm) ||
+            t.venue.name.toLowerCase().includes(lowerTerm) ||
+            t.ticketCode.toLowerCase().includes(lowerTerm) ||
+            dateStr.includes(lowerTerm) ||
+            seatInfo.includes(lowerTerm)
         );
     });
 
@@ -171,10 +170,9 @@ export default function MyTickets() {
                 <div style={panel}>
                     <h1 style={h1}>Moje vstupenky</h1>
 
-                    {/* 3. Vstupní pole */}
                     <input
                         type="text"
-                        placeholder="Hledat akci, kód, místo..."
+                        placeholder="Hledat v načtených (akce, kód, místo)..."
                         style={searchInput}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -190,63 +188,82 @@ export default function MyTickets() {
                             Žádná vstupenka neodpovídá hledání "{searchTerm}".
                         </div>
                     ) : (
-                        <div style={grid}>
-                            {/* 4. Renderujeme filtrovaný seznam */}
-                            {filteredTickets.map(t => (
-                                <div key={t.id} style={card}>
-                                    <div>
-                                        <div style={label}>Akce</div>
-                                        <div style={value}>{t.eventName}</div>
-                                    </div>
-                                    <div>
-                                        <div style={label}>Datum</div>
-                                        <div style={value}>{new Date(t.eventStart).toLocaleString("cs-CZ")}</div>
-                                    </div>
-                                    <div>
-                                        <div style={label}>Místo</div>
-                                        <div style={value}>{t.venue.name}</div>
-                                    </div>
-                                    <div style={{display: "flex", justifyContent: "space-between"}}>
+                        <div>
+                            <div style={grid}>
+                                {filteredTickets.map(t => (
+                                    <div key={t.id} style={card}>
                                         <div>
-                                            <div style={label}>Typ</div>
-                                            <div style={value}>
-                                                {t.type === "STANDING" ? "Na stání" : `Řada ${t.seatRow}, Místo ${t.seatNumber}`}
+                                            <div style={label}>Akce</div>
+                                            <div style={value}>{t.eventName}</div>
+                                        </div>
+                                        <div>
+                                            <div style={label}>Datum</div>
+                                            <div style={value}>{new Date(t.eventStart).toLocaleString("cs-CZ")}</div>
+                                        </div>
+                                        <div>
+                                            <div style={label}>Místo</div>
+                                            <div style={value}>{t.venue.name}</div>
+                                        </div>
+                                        <div style={{display: "flex", justifyContent: "space-between"}}>
+                                            <div>
+                                                <div style={label}>Typ</div>
+                                                <div style={value}>
+                                                    {t.type === "STANDING" ? "Na stání" : `Řada ${t.seatRow}, Místo ${t.seatNumber}`}
+                                                </div>
+                                            </div>
+                                            <div style={{textAlign: "right"}}>
+                                                <div style={label}>Cena</div>
+                                                <div style={{...value, color: "#22d3ee"}}>{t.price} Kč</div>
                                             </div>
                                         </div>
-                                        <div style={{textAlign: "right"}}>
-                                            <div style={label}>Cena</div>
-                                            <div style={{...value, color: "#22d3ee"}}>{t.price} Kč</div>
-                                        </div>
-                                    </div>
 
-                                    <div
-                                        style={{ marginTop: 12, display: "flex", justifyContent: "center", cursor: "zoom-in" }}
-                                        onClick={() => setZoomedTicket(t)}
-                                        title="Zvětšit QR kód"
-                                    >
-                                        <div style={{ padding: 8, background: "white", borderRadius: 8 }}>
-                                            <AuthImage
-                                                url={`/api/tickets/${t.id}/qr`}
-                                                alt={`QR ${t.ticketCode}`}
-                                                style={{ width: 120, height: 120, display: "block" }}
-                                            />
+                                        <div
+                                            style={{ marginTop: 12, display: "flex", justifyContent: "center", cursor: "zoom-in" }}
+                                            onClick={() => setZoomedTicket(t)}
+                                            title="Zvětšit QR kód"
+                                        >
+                                            <div style={{ padding: 8, background: "white", borderRadius: 8 }}>
+                                                <AuthImage
+                                                    url={`/api/tickets/${t.id}/qr`}
+                                                    alt={`QR ${t.ticketCode}`}
+                                                    style={{ width: 120, height: 120, display: "block" }}
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div style={{textAlign: "center", fontSize: 11, color: "#a7b0c0", marginTop: 4}}>
-                                        {t.ticketCode}
-                                    </div>
+                                        <div style={{textAlign: "center", fontSize: 11, color: "#a7b0c0", marginTop: 4}}>
+                                            {t.ticketCode}
+                                        </div>
 
-                                    <button
-                                        style={pdfBtn}
-                                        onClick={() => handleDownloadPdf(t.id)}
-                                        onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
-                                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                                    >
-                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
-                                        Stáhnout PDF
-                                    </button>
+                                        <button
+                                            style={pdfBtn}
+                                            onClick={() => handleDownloadPdf(t.id)}
+                                            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                                            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                                        >
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path></svg>
+                                            Stáhnout PDF
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Tlačítko Načíst další */}
+                            {!isLastPage && !searchTerm && (
+                                <button
+                                    onClick={handleLoadMore}
+                                    style={loadMoreBtn}
+                                    disabled={loadingMore}
+                                >
+                                    {loadingMore ? "Načítám..." : "Načíst další vstupenky"}
+                                </button>
+                            )}
+
+                            {/* Upozornění pro vyhledávání */}
+                            {searchTerm && !isLastPage && (
+                                <div style={{textAlign: "center", color: "#a7b0c0", marginTop: 20, fontSize: 13}}>
+                                    Vyhledávání probíhá pouze v načtených vstupenkách. Pro prohledání starších zrušte filtr a načtěte je.
                                 </div>
-                            ))}
+                            )}
                         </div>
                     )}
                 </div>

@@ -11,6 +11,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
@@ -103,20 +107,24 @@ class TicketServiceTest {
     // ==========================================
 
     @Test
-    void getMyTickets_ReturnsMappedDtos() {
+    void getMyTickets_ReturnsMappedPage() {
         // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        // Simulujeme, že repozitář vrátí stránku obsahující jeden ticket
+        Page<Ticket> ticketPage = new PageImpl<>(List.of(ticket));
+
         when(ticketRepository.findAllByOrderAppUserEmailAndStatusIn(
-                eq(USER_EMAIL), any()))
-                .thenReturn(List.of(ticket));
+                eq(USER_EMAIL), any(), eq(pageable)))
+                .thenReturn(ticketPage);
 
         // Act
-        List<TicketDto> result = ticketService.getMyTickets(USER_EMAIL);
+        Page<TicketDto> result = ticketService.getMyTickets(USER_EMAIL, pageable);
 
         // Assert
         assertNotNull(result);
-        assertEquals(1, result.size());
+        assertEquals(1, result.getTotalElements()); // Celkový počet prvků
 
-        TicketDto dto = result.get(0);
+        TicketDto dto = result.getContent().get(0);
         assertEquals(TICKET_ID, dto.getId());
         assertEquals("Koncert", dto.getEventName());
         assertEquals("O2 Arena", dto.getVenue().getName());
@@ -126,17 +134,20 @@ class TicketServiceTest {
     }
 
     @Test
-    void getMyTickets_ReturnsEmptyList() {
+    void getMyTickets_ReturnsEmptyPage() {
         // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+
         when(ticketRepository.findAllByOrderAppUserEmailAndStatusIn(
-                eq(USER_EMAIL), any()))
-                .thenReturn(List.of());
+                eq(USER_EMAIL), any(), eq(pageable)))
+                .thenReturn(Page.empty());
 
         // Act
-        List<TicketDto> result = ticketService.getMyTickets(USER_EMAIL);
+        Page<TicketDto> result = ticketService.getMyTickets(USER_EMAIL, pageable);
 
         // Assert
         assertTrue(result.isEmpty());
+        assertEquals(0, result.getTotalElements());
     }
 
     // ==========================================
@@ -219,16 +230,20 @@ class TicketServiceTest {
 
     @Test
     void toDto_StandingTicket_MapsCorrectly() {
-        // Arrange: Lístek na stání nemá Seat
+        // Arrange
         ticket.setSeat(null);
-        when(ticketRepository.findAllByOrderAppUserEmailAndStatusIn(eq(USER_EMAIL), any()))
-                .thenReturn(List.of(ticket));
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Ticket> ticketPage = new PageImpl<>(List.of(ticket));
+
+        when(ticketRepository.findAllByOrderAppUserEmailAndStatusIn(
+                eq(USER_EMAIL), any(), eq(pageable)))
+                .thenReturn(ticketPage);
 
         // Act
-        List<TicketDto> result = ticketService.getMyTickets(USER_EMAIL);
+        Page<TicketDto> result = ticketService.getMyTickets(USER_EMAIL, pageable);
 
         // Assert
-        TicketDto dto = result.get(0);
+        TicketDto dto = result.getContent().get(0);
         assertNull(dto.getSeatRow());
         assertNull(dto.getSeatNumber());
         assertEquals("Koncert", dto.getEventName());
