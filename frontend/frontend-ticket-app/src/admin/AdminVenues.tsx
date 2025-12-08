@@ -264,7 +264,7 @@ export default function AdminVenues() {
                                 </div>
                                 <div style={formField}>
                                     <label style={formLabel}>Kapacita sezení</label>
-                                    <input style={formInput} type="number" name="sittingCapacity" value={formData.sittingCapacity} onChange={handleFormChange} min="0" />
+                                    <input style={formInput} type="number" name="sittingCapacity" value={formData.sittingCapacity} onChange={handleFormChange} min="0" readOnly/>
                                 </div>
                                 <div style={fullWidthField}>
                                     <label style={formLabel}>Plán sezení (Editor)</label>

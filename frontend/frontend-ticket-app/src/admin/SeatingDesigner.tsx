@@ -51,7 +51,16 @@ export default function SeatingDesigner({ initialJson, onChange }: Props) {
 
     const updateRow = (index: number, field: keyof RowDef, value: string | number) => {
         const newRows = [...rows];
-        newRows[index] = { ...newRows[index], [field]: value };
+        if (field === "count") {
+            let numValue = Number(value);
+            if (numValue > 25) numValue = 25; // Oříznout na 25
+            if (numValue < 1) numValue = 1;   // Minimum 1
+            newRows[index] = { ...newRows[index], [field]: numValue };
+        } else {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            newRows[index] = { ...newRows[index], [field]: value };
+        }
         setRows(newRows);
     };
 
@@ -79,6 +88,7 @@ export default function SeatingDesigner({ initialJson, onChange }: Props) {
                             type="number"
                             value={r.count}
                             min={1}
+                            max={25}
                             onChange={(e) => updateRow(i, "count", Number(e.target.value))}
                         />
                         <button type="button" style={btnSmall} onClick={() => removeRow(i)}>X</button>
