@@ -236,13 +236,7 @@ public class EventService {
             }
             if (f.getQ() != null && !f.getQ().isBlank()) {
                 String like = "%" + f.getQ().toLowerCase() + "%";
-
-                // Hledáme v: Názvu akce OR Názvu místa OR ID akce
-                preds.add(cb.or(
-                        cb.like(cb.lower(root.get("name")), like),       // Název akce
-                        cb.like(cb.lower(venue.get("name")), like),      // Název místa
-                        cb.like(root.get("id").as(String.class), like)   // ID akce
-                ));
+                preds.add(cb.like(cb.lower(root.get("name")), like));
             }
             if (f.getPriceMax() != null) {
                 Expression<BigDecimal> sp = root.get("standingPrice");
