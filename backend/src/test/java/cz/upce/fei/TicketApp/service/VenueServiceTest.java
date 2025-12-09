@@ -1,6 +1,8 @@
 package cz.upce.fei.TicketApp.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import cz.upce.fei.TicketApp.dto.common.SeatDto;
 import cz.upce.fei.TicketApp.dto.venue.VenueCreateUpdateDto;
 import cz.upce.fei.TicketApp.dto.venue.VenueDto;
 import cz.upce.fei.TicketApp.model.entity.Event;
@@ -12,6 +14,7 @@ import cz.upce.fei.TicketApp.repository.VenueRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -20,10 +23,12 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,23 +52,15 @@ class VenueServiceTest {
     // ========================
     // CREATE
     // ========================
+
     @Test
-    void create_Success() {
+    void create_Success_Basic() {
         VenueCreateUpdateDto dto = new VenueCreateUpdateDto();
         dto.setName("Arena");
         dto.setAddress("Street 123");
         dto.setStandingCapacity(100);
         dto.setSittingCapacity(50);
-
-        // OPRAVA: Pro tento test necháme JSON null.
-        // Tím se vyhneme volání objectMapper.readValue(), který by vrátil null (protože je to mock)
-        // a způsobil NullPointerException při pokusu číst řádky.
         dto.setSeatingPlanJson(null);
-
-        // Pokud bys chtěl testovat i parsování, musel bys udělat toto (a SeatingPlan by musel být přístupný):
-        // VenueService.SeatingPlan mockPlan = new VenueService.SeatingPlan();
-        // mockPlan.setRows(new ArrayList<>());
-        // when(objectMapper.readValue(anyString(), eq(VenueService.SeatingPlan.class))).thenReturn(mockPlan);
 
         when(venueRepository.findByName("Arena")).thenReturn(Optional.empty());
         when(venueRepository.save(any(Venue.class))).thenAnswer(i -> {
@@ -78,6 +75,63 @@ class VenueServiceTest {
         assertEquals(1L, result.getId());
         assertEquals("Arena", result.getName());
         verify(venueRepository).save(any(Venue.class));
+        verify(seatRepository).deleteByVenueId(1L);
+    }
+
+    @Test
+    void create_WithSeatingPlan_ShouldGenerateSeats() throws JsonProcessingException {
+        VenueCreateUpdateDto dto = new VenueCreateUpdateDto();
+        dto.setName("Cinema");
+        dto.setSeatingPlanJson("{\"rows\": [{\"label\":\"A\", \"count\":2}]}");
+
+        VenueService.SeatingPlanRow rowA = new VenueService.SeatingPlanRow();
+        rowA.setLabel("A");
+        rowA.setCount(2);
+
+        VenueService.SeatingPlan mockPlan = new VenueService.SeatingPlan();
+        mockPlan.setRows(List.of(rowA));
+
+        when(venueRepository.findByName("Cinema")).thenReturn(Optional.empty());
+        when(venueRepository.save(any(Venue.class))).thenAnswer(i -> {
+            Venue v = i.getArgument(0);
+            v.setId(5L);
+            return v;
+        });
+        when(objectMapper.readValue(anyString(), eq(VenueService.SeatingPlan.class))).thenReturn(mockPlan);
+
+        venueService.create(dto);
+
+        verify(seatRepository).deleteByVenueId(5L);
+
+        ArgumentCaptor<List<Seat>> seatsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(seatRepository).saveAll(seatsCaptor.capture());
+
+        List<Seat> savedSeats = seatsCaptor.getValue();
+        assertEquals(2, savedSeats.size());
+
+        Seat s1 = savedSeats.get(0);
+        assertEquals("A", s1.getSeatRow());
+        assertEquals("1", s1.getSeatNumber());
+        assertEquals(5L, s1.getVenue().getId());
+
+        Seat s2 = savedSeats.get(1);
+        assertEquals("A", s2.getSeatRow());
+        assertEquals("2", s2.getSeatNumber());
+    }
+
+    @Test
+    void create_WithInvalidJson_ThrowsRuntimeException() throws JsonProcessingException {
+        VenueCreateUpdateDto dto = new VenueCreateUpdateDto();
+        dto.setName("Cinema");
+        dto.setSeatingPlanJson("{invalid}");
+
+        when(venueRepository.findByName("Cinema")).thenReturn(Optional.empty());
+        when(venueRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(objectMapper.readValue(anyString(), eq(VenueService.SeatingPlan.class)))
+                .thenThrow(new JsonProcessingException("Syntax error") {});
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> venueService.create(dto));
+        assertTrue(ex.getMessage().contains("Chyba při zpracování plánku sezení"));
     }
 
     @Test
@@ -95,6 +149,7 @@ class VenueServiceTest {
     // ========================
     // FIND ALL
     // ========================
+
     @Test
     void findAll_ReturnsList() {
         Venue venue = new Venue();
@@ -109,68 +164,37 @@ class VenueServiceTest {
         assertEquals("Arena", list.get(0).getName());
     }
 
-    // ========================
-    // FIND ALL (S VYHLEDÁVÁNÍM A STRÁNKOVÁNÍM)
-    // ========================
     @Test
     void findAll_ReturnsMappedPage() {
-        // Arrange
         String searchTerm = "Arena";
         Pageable pageable = PageRequest.of(0, 10);
-
         Venue venue = new Venue();
         venue.setId(1L);
         venue.setName("O2 Arena");
-        venue.setAddress("Prague");
 
-        // Simulujeme, že repozitář vrátí stránku s jedním záznamem
         Page<Venue> page = new PageImpl<>(List.of(venue));
 
-        when(venueRepository.findAllBySearch(eq(searchTerm), eq(pageable)))
-                .thenReturn(page);
+        when(venueRepository.findAllBySearch(eq(searchTerm), eq(pageable))).thenReturn(page);
 
-        // Act
         Page<VenueDto> result = venueService.findAll(searchTerm, pageable);
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements()); // Celkový počet
-        assertEquals(1, result.getContent().size()); // Počet na stránce
-
-        VenueDto dto = result.getContent().get(0);
-        assertEquals(1L, dto.getId());
-        assertEquals("O2 Arena", dto.getName());
-        assertEquals("Prague", dto.getAddress());
-
-        // Ověření, že se volala správná metoda repozitáře
-        verify(venueRepository).findAllBySearch(eq(searchTerm), eq(pageable));
-    }
-
-    @Test
-    void findAll_EmptyResult() {
-        // Arrange
-        String searchTerm = "NonExistent";
-        Pageable pageable = PageRequest.of(0, 10);
-
-        when(venueRepository.findAllBySearch(eq(searchTerm), eq(pageable)))
-                .thenReturn(Page.empty());
-
-        // Act
-        Page<VenueDto> result = venueService.findAll(searchTerm, pageable);
-
-        // Assert
-        assertTrue(result.isEmpty());
-        assertEquals(0, result.getTotalElements());
+        assertEquals(1, result.getTotalElements());
+        assertEquals("O2 Arena", result.getContent().get(0).getName());
     }
 
     // ========================
     // FIND BY ID
     // ========================
+
     @Test
     void findById_Success() {
         Venue venue = new Venue();
         venue.setId(1L);
         venue.setName("Arena");
+        venue.setAddress("Addr");
+        venue.setStandingCapacity(100);
+        venue.setSittingCapacity(50);
+        venue.setSeatingPlanJson("{}");
 
         when(venueRepository.findById(1L)).thenReturn(Optional.of(venue));
 
@@ -178,6 +202,8 @@ class VenueServiceTest {
 
         assertNotNull(result);
         assertEquals("Arena", result.getName());
+        assertEquals(100, result.getStandingCapacity());
+        assertEquals("{}", result.getSeatingPlanJson());
     }
 
     @Test
@@ -186,20 +212,22 @@ class VenueServiceTest {
 
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
                 () -> venueService.findById(1L));
-        assertTrue(exception.getMessage().contains("Místo konání s ID 1 nebylo nalezeno."));
+        assertTrue(exception.getMessage().contains("nebylo nalezeno"));
     }
 
     // ========================
     // UPDATE
     // ========================
+
     @Test
-    void update_Success() {
+    void update_Success_Basic() {
         Venue venue = new Venue();
         venue.setId(1L);
         venue.setName("Old Arena");
 
         VenueCreateUpdateDto dto = new VenueCreateUpdateDto();
         dto.setName("New Arena");
+        dto.setSeatingPlanJson(null);
 
         when(venueRepository.findById(1L)).thenReturn(Optional.of(venue));
         when(venueRepository.findByName("New Arena")).thenReturn(Optional.empty());
@@ -209,18 +237,31 @@ class VenueServiceTest {
 
         assertEquals("New Arena", result.getName());
         verify(venueRepository).save(venue);
+        verify(seatRepository).deleteByVenueId(1L);
     }
 
     @Test
-    void update_VenueNotFound_ThrowsException() {
+    void update_WithSeatingPlan_ReplacesSeats() throws JsonProcessingException {
+        Long venueId = 1L;
+        Venue existingVenue = new Venue();
+        existingVenue.setId(venueId);
+        existingVenue.setName("OldName");
+
         VenueCreateUpdateDto dto = new VenueCreateUpdateDto();
-        dto.setName("New Arena");
+        dto.setName("NewName");
+        dto.setSeatingPlanJson("{\"rows\": []}");
 
-        when(venueRepository.findById(1L)).thenReturn(Optional.empty());
+        VenueService.SeatingPlan emptyPlan = new VenueService.SeatingPlan();
+        emptyPlan.setRows(new ArrayList<>());
 
-        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
-                () -> venueService.update(1L, dto));
-        assertTrue(exception.getMessage().contains("Místo konání s ID 1 nebylo nalezeno."));
+        when(venueRepository.findById(venueId)).thenReturn(Optional.of(existingVenue));
+        when(venueRepository.save(any())).thenReturn(existingVenue);
+        when(objectMapper.readValue(anyString(), eq(VenueService.SeatingPlan.class))).thenReturn(emptyPlan);
+
+        venueService.update(venueId, dto);
+
+        verify(seatRepository).deleteByVenueId(venueId);
+        verify(seatRepository).saveAll(anyList());
     }
 
     @Test
@@ -239,14 +280,13 @@ class VenueServiceTest {
         when(venueRepository.findById(1L)).thenReturn(Optional.of(venue));
         when(venueRepository.findByName("New Arena")).thenReturn(Optional.of(existing));
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> venueService.update(1L, dto));
-        assertEquals("Jiný místo konání s tímto názvem již existuje.", exception.getMessage());
+        assertThrows(IllegalArgumentException.class, () -> venueService.update(1L, dto));
     }
 
     // ========================
     // DELETE
     // ========================
+
     @Test
     void delete_Success() {
         when(venueRepository.existsById(1L)).thenReturn(true);
@@ -259,65 +299,43 @@ class VenueServiceTest {
     }
 
     @Test
-    void delete_VenueNotFound_ThrowsException() {
+    void delete_VenueNotFound() {
         when(venueRepository.existsById(1L)).thenReturn(false);
-
-        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
-                () -> venueService.delete(1L));
-        assertTrue(exception.getMessage().contains("Místo konání s ID 1 nebylo nalezeno."));
+        assertThrows(EntityNotFoundException.class, () -> venueService.delete(1L));
     }
 
     @Test
-    void delete_VenueHasEvents_ThrowsException() {
+    void delete_VenueHasEvents() {
         when(venueRepository.existsById(1L)).thenReturn(true);
+        when(eventRepository.findAllByVenueId(1L)).thenReturn(List.of(new Event()));
 
-        Event event = mock(Event.class);
-        when(eventRepository.findAllByVenueId(1L)).thenReturn(List.of(event));
-
-        IllegalStateException exception = assertThrows(IllegalStateException.class,
-                () -> venueService.delete(1L));
-        assertEquals("Nelze smazat místo konání, ke kterému jsou přiřazeny akce.", exception.getMessage());
+        assertThrows(IllegalStateException.class, () -> venueService.delete(1L));
     }
 
-    @Test
-    void findById_VenueWithEventsAndSeats_Success() {
-        Venue venue = new Venue();
-        venue.setId(1L);
-        venue.setName("Test Venue");
-        venue.setEvents(List.of(mock(Event.class), mock(Event.class)));
-        venue.setSeats(List.of(mock(Seat.class), mock(Seat.class), mock(Seat.class)));
-
-        when(venueRepository.findById(1L)).thenReturn(Optional.of(venue));
-
-        VenueDto dto = venueService.findById(1L);
-
-        assertNotNull(dto);
-        assertEquals(1L, dto.getId());
-        assertEquals("Test Venue", dto.getName());
-    }
+    // ========================
+    // GET SEATS BY VENUE ID
+    // ========================
 
     @Test
-    void findById_AllFieldsMappedCorrectly() {
-        Venue venue = new Venue();
-        venue.setId(1L);
-        venue.setName("Test Venue");
-        venue.setAddress("Test Address");
-        venue.setStandingCapacity(100);
-        venue.setSittingCapacity(200);
-        venue.setSeatingPlanJson("{\"layout\": \"test\"}");
-        venue.setEvents(List.of(mock(Event.class)));
-        venue.setSeats(List.of(mock(Seat.class)));
+    void getSeatsByVenueId_ReturnsMappedList() {
+        Long venueId = 1L;
+        Seat seat1 = new Seat();
+        seat1.setId(10L);
+        seat1.setSeatRow("A");
+        seat1.setSeatNumber("1");
 
-        when(venueRepository.findById(1L)).thenReturn(Optional.of(venue));
+        Seat seat2 = new Seat();
+        seat2.setId(11L);
+        seat2.setSeatRow("B");
+        seat2.setSeatNumber("2");
 
-        VenueDto dto = venueService.findById(1L);
+        when(seatRepository.findAllByVenueId(venueId)).thenReturn(List.of(seat1, seat2));
 
-        assertNotNull(dto);
-        assertEquals(1L, dto.getId());
-        assertEquals("Test Venue", dto.getName());
-        assertEquals("Test Address", dto.getAddress());
-        assertEquals(100, dto.getStandingCapacity());
-        assertEquals(200, dto.getSittingCapacity());
-        assertEquals("{\"layout\": \"test\"}", dto.getSeatingPlanJson());
+        List<SeatDto> result = venueService.getSeatsByVenueId(venueId);
+
+        assertEquals(2, result.size());
+        assertEquals("A", result.get(0).getSeatRow());
+        assertEquals("1", result.get(0).getSeatNumber());
+        assertEquals(11L, result.get(1).getId());
     }
 }

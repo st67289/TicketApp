@@ -24,11 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-// Pokud máš config v src/test/resources/application.properties, stačí @SpringBootTest.
-// Pokud se jmenuje application-test.properties, odkomentuj @ActiveProfiles("test").
- @ActiveProfiles("test")
+@ActiveProfiles("test")
 @SpringBootTest
-public class ConcurrencyTest {
+public class StandingConcurrencyTest {
 
     @Autowired
     private CartService cartService;
@@ -43,25 +41,23 @@ public class ConcurrencyTest {
     private TicketRepository tickets;
     @Autowired
     private CartRepository carts;
+    @Autowired
+    private SeatRepository seats;
 
     private Long eventId;
 
-    // Kapacita je jen 5, ale pokusů bude 10
     private final int CAPACITY = 5;
     private final int THREAD_COUNT = 10;
 
     @BeforeEach
     void setup() {
-        // Vyčistíme DB (vazby se mohou bránit, proto v tomto pořadí nebo s cascade)
         tickets.deleteAll();
         carts.deleteAll();
-        // Eventy a users mohou mít vazby, Spring Data JPA to obvykle zvládne,
-        // ale pro jistotu mažeme "děti" před "rodiči".
         events.deleteAll();
+        seats.deleteAll();
         venues.deleteAll();
         users.deleteAll();
 
-        // 1. Vytvoříme Venue
         Venue venue = Venue.builder()
                 .name("Test Arena")
                 .standingCapacity(CAPACITY)
@@ -69,7 +65,6 @@ public class ConcurrencyTest {
                 .build();
         venues.save(venue);
 
-        // 2. Vytvoříme Event
         Event event = Event.builder()
                 .name("Rock Concert")
                 .venue(venue)
@@ -79,24 +74,21 @@ public class ConcurrencyTest {
         events.save(event);
         eventId = event.getId();
 
-        // 3. Vytvoříme uživatele
         for (int i = 0; i < THREAD_COUNT; i++) {
-            // POZOR: Nahraď UserRoles.USER tím, co máš ve svém enumu (např. CUSTOMER, CLIENT...)
             AppUser u = AppUser.builder()
                     .email("user" + i + "@test.com")
-                    .passwordHash("hashedPassword123") // Opraveno dle entity
+                    .passwordHash("hashedPassword123")
                     .firstName("Test")
                     .secondName("User")
-                    .role(UserRoles.USER) // Nutné nastavit (nullable = false)
-                    .isEnabled(true)      // Nutné, Lombok builder ignoruje default = true
+                    .role(UserRoles.USER)
+                    .isEnabled(true)
                     .build();
             users.save(u);
 
-            // Vytvoříme prázdný košík
             Cart c = Cart.builder()
                     .user(u)
                     .lastChanged(OffsetDateTime.now())
-                    .tickets(new ArrayList<>()) // Inicializace listu
+                    .tickets(new ArrayList<>())
                     .build();
             carts.save(c);
         }
@@ -117,23 +109,18 @@ public class ConcurrencyTest {
 
             executor.submit(() -> {
                 try {
-                    // Čekáme na start
                     startLatch.await();
 
-                    // Pokus o nákup
                     CartAddItemDto dto = CartAddItemDto.builder()
                             .eventId(eventId)
                             .quantity(1)
                             .build();
 
-                    // Zde se děje "magie" se zamykáním
                     cartService.addItem(email, dto);
 
-                    // Pokud projde bez chyby:
                     successCount.incrementAndGet();
 
                 } catch (Exception e) {
-                    // Pokud vyhodí CapacityExceededException (nebo jinou runtime):
                     failCount.incrementAndGet();
                 } finally {
                     endLatch.countDown();
@@ -141,14 +128,11 @@ public class ConcurrencyTest {
             });
         }
 
-        // START! Všechna vlákna se pustí naráz
         startLatch.countDown();
 
-        // Čekáme na dokončení
         endLatch.await();
         executor.shutdown();
 
-        // --- VYHODNOCENÍ ---
         long ticketsInDb = tickets.count();
 
         System.out.println("====== VÝSLEDEK INTEGRACNIHO TESTU ======");
@@ -159,8 +143,7 @@ public class ConcurrencyTest {
         System.out.println("DB záznamů: " + ticketsInDb);
         System.out.println("=========================================");
 
-        // Kritický test: V DB nesmí být víc lístků, než je kapacita
-        assertEquals(CAPACITY, ticketsInDb, "FAIL: V DB je více lístků než kapacita! Zámek nefunguje.");
+        assertEquals(CAPACITY, ticketsInDb);
         assertEquals(CAPACITY, successCount.get());
         assertEquals(THREAD_COUNT - CAPACITY, failCount.get());
     }

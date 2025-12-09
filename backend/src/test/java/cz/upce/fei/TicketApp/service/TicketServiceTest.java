@@ -42,7 +42,6 @@ class TicketServiceTest {
     @InjectMocks
     private TicketService ticketService;
 
-    // Testovací data
     private AppUser user;
     private Order order;
     private Venue venue;
@@ -56,19 +55,16 @@ class TicketServiceTest {
 
     @BeforeEach
     void setup() {
-        // 1. Nastavení uživatele
         user = AppUser.builder()
                 .id(1L)
                 .email(USER_EMAIL)
                 .build();
 
-        // 2. Nastavení objednávky (propojení na uživatele je klíčové pro kontrolu vlastníka)
         order = Order.builder()
                 .id(50L)
                 .appUser(user)
                 .build();
 
-        // 3. Nastavení Venue a Eventu
         venue = Venue.builder()
                 .id(10L)
                 .name("O2 Arena")
@@ -82,7 +78,6 @@ class TicketServiceTest {
                 .startTime(OffsetDateTime.now().plusDays(1))
                 .build();
 
-        // 4. Nastavení Sedadla
         seat = Seat.builder()
                 .id(5L)
                 .seatRow("A")
@@ -90,7 +85,6 @@ class TicketServiceTest {
                 .venue(venue)
                 .build();
 
-        // 5. Nastavení Ticketu
         ticket = Ticket.builder()
                 .id(TICKET_ID)
                 .ticketCode("T-123456")
@@ -98,7 +92,7 @@ class TicketServiceTest {
                 .status(TicketStatus.ISSUED)
                 .event(event)
                 .seat(seat)
-                .order(order) // Důležité!
+                .order(order)
                 .build();
     }
 
@@ -108,21 +102,17 @@ class TicketServiceTest {
 
     @Test
     void getMyTickets_ReturnsMappedPage() {
-        // Arrange
         Pageable pageable = PageRequest.of(0, 10);
-        // Simulujeme, že repozitář vrátí stránku obsahující jeden ticket
         Page<Ticket> ticketPage = new PageImpl<>(List.of(ticket));
 
         when(ticketRepository.findAllByOrderAppUserEmailAndStatusIn(
                 eq(USER_EMAIL), any(), eq(pageable)))
                 .thenReturn(ticketPage);
 
-        // Act
         Page<TicketDto> result = ticketService.getMyTickets(USER_EMAIL, pageable);
 
-        // Assert
         assertNotNull(result);
-        assertEquals(1, result.getTotalElements()); // Celkový počet prvků
+        assertEquals(1, result.getTotalElements());
 
         TicketDto dto = result.getContent().get(0);
         assertEquals(TICKET_ID, dto.getId());
@@ -135,17 +125,14 @@ class TicketServiceTest {
 
     @Test
     void getMyTickets_ReturnsEmptyPage() {
-        // Arrange
         Pageable pageable = PageRequest.of(0, 10);
 
         when(ticketRepository.findAllByOrderAppUserEmailAndStatusIn(
                 eq(USER_EMAIL), any(), eq(pageable)))
                 .thenReturn(Page.empty());
 
-        // Act
         Page<TicketDto> result = ticketService.getMyTickets(USER_EMAIL, pageable);
 
-        // Assert
         assertTrue(result.isEmpty());
         assertEquals(0, result.getTotalElements());
     }
@@ -156,39 +143,30 @@ class TicketServiceTest {
 
     @Test
     void getTicketQr_Owner_ReturnsBytes() {
-        // Arrange
         byte[] mockImage = new byte[]{1, 2, 3};
         when(ticketRepository.findById(TICKET_ID)).thenReturn(Optional.of(ticket));
         when(qrCodeService.generateQrCodeImage("T-123456", 200, 200)).thenReturn(mockImage);
 
-        // Act
         byte[] result = ticketService.getTicketQr(TICKET_ID, USER_EMAIL);
 
-        // Assert
         assertArrayEquals(mockImage, result);
         verify(qrCodeService).generateQrCodeImage(anyString(), anyInt(), anyInt());
     }
 
     @Test
     void getTicketQr_NotOwner_ThrowsAccessDenied() {
-        // Arrange
         when(ticketRepository.findById(TICKET_ID)).thenReturn(Optional.of(ticket));
 
-        // Act & Assert
-        // Voláme s OTHER_EMAIL, ale lístek patří USER_EMAIL
         assertThrows(AccessDeniedException.class, () ->
                 ticketService.getTicketQr(TICKET_ID, OTHER_EMAIL));
 
-        // QR service by se neměla zavolat
         verifyNoInteractions(qrCodeService);
     }
 
     @Test
     void getTicketQr_NotFound_ThrowsEntityNotFound() {
-        // Arrange
         when(ticketRepository.findById(999L)).thenReturn(Optional.empty());
 
-        // Act & Assert
         assertThrows(EntityNotFoundException.class, () ->
                 ticketService.getTicketQr(999L, USER_EMAIL));
     }
@@ -199,25 +177,20 @@ class TicketServiceTest {
 
     @Test
     void getTicketPdf_Owner_ReturnsBytes() {
-        // Arrange
         byte[] mockPdf = new byte[]{9, 8, 7};
         when(ticketRepository.findById(TICKET_ID)).thenReturn(Optional.of(ticket));
         when(pdfService.generateTicketPdf(ticket)).thenReturn(mockPdf);
 
-        // Act
         byte[] result = ticketService.getTicketPdf(TICKET_ID, USER_EMAIL);
 
-        // Assert
         assertArrayEquals(mockPdf, result);
         verify(pdfService).generateTicketPdf(ticket);
     }
 
     @Test
     void getTicketPdf_NotOwner_ThrowsAccessDenied() {
-        // Arrange
         when(ticketRepository.findById(TICKET_ID)).thenReturn(Optional.of(ticket));
 
-        // Act & Assert
         assertThrows(AccessDeniedException.class, () ->
                 ticketService.getTicketPdf(TICKET_ID, OTHER_EMAIL));
 
@@ -230,7 +203,6 @@ class TicketServiceTest {
 
     @Test
     void toDto_StandingTicket_MapsCorrectly() {
-        // Arrange
         ticket.setSeat(null);
         Pageable pageable = PageRequest.of(0, 10);
         Page<Ticket> ticketPage = new PageImpl<>(List.of(ticket));
@@ -239,10 +211,8 @@ class TicketServiceTest {
                 eq(USER_EMAIL), any(), eq(pageable)))
                 .thenReturn(ticketPage);
 
-        // Act
         Page<TicketDto> result = ticketService.getMyTickets(USER_EMAIL, pageable);
 
-        // Assert
         TicketDto dto = result.getContent().get(0);
         assertNull(dto.getSeatRow());
         assertNull(dto.getSeatNumber());

@@ -51,14 +51,13 @@ public class UserService {
         AppUser user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        // Volitelně: Kontrola, zda není uživatel zablokován (stejně jako u běžného loginu)
         if (!user.isEnabled()) {
             throw new IllegalArgumentException("Váš účet byl zablokován.");
         }
 
         String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
 
-        // Vracíme AuthResponseDto, což je čistší než vracet Mapu
+
         return new AuthResponseDto(token, user.getEmail(), user.getRole(), user.getOauthProvider());
     }
 

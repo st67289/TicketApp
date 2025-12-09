@@ -15,7 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.List; // Import pro List.of
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,12 +30,18 @@ public class SeatingConcurrencyTest {
     @Autowired
     private CartService cartService;
 
-    @Autowired private UserRepository users;
-    @Autowired private EventRepository events;
-    @Autowired private VenueRepository venues;
-    @Autowired private SeatRepository seats;
-    @Autowired private TicketRepository tickets;
-    @Autowired private CartRepository carts;
+    @Autowired
+    private UserRepository users;
+    @Autowired
+    private EventRepository events;
+    @Autowired
+    private VenueRepository venues;
+    @Autowired
+    private SeatRepository seats;
+    @Autowired
+    private TicketRepository tickets;
+    @Autowired
+    private CartRepository carts;
 
     private Long eventId;
     private Long seatId;
@@ -112,11 +118,9 @@ public class SeatingConcurrencyTest {
                 try {
                     startLatch.await();
 
-                    // --- OPRAVA ZDE ---
-                    // DTO očekává List<Long> seatIds, ne jedno Long seatId
                     CartAddItemDto dto = CartAddItemDto.builder()
                             .eventId(eventId)
-                            .seatIds(List.of(seatId)) // Použijeme List.of()
+                            .seatIds(List.of(seatId))
                             .build();
 
                     cartService.addItem(email, dto);
@@ -126,9 +130,6 @@ public class SeatingConcurrencyTest {
                 } catch (SeatAlreadyTakenException e) {
                     takenExceptionCount.incrementAndGet();
                 } catch (Exception e) {
-                    // Poznámka: Pokud by selhala DB constraint (DataIntegrityViolation),
-                    // může to spadnout sem, pokud to Service nechytí.
-                    // V concurrency testu je to ale taky "úspěch" v tom smyslu, že to zabránilo duplicitě.
                     e.printStackTrace();
                     otherExceptionCount.incrementAndGet();
                 } finally {
@@ -154,7 +155,6 @@ public class SeatingConcurrencyTest {
         assertEquals(1, ticketsInDb, "V DB musí být pro dané sedadlo jen jeden lístek!");
         assertEquals(1, successCount.get(), "Jen jeden uživatel měl uspět.");
 
-        // Součet chyb (validace v servise + DB constraint) by měl být zbytek
         assertEquals(THREAD_COUNT - 1, takenExceptionCount.get() + otherExceptionCount.get());
     }
 }

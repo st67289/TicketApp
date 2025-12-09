@@ -21,8 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-// @ExtendWith nahrazuje nutnost volat openMocks v setupu, ale tvůj setup je taky OK.
-// Pro jistotu necháme čisté MockitoAnnotations v setupu, pokud nepoužíváš JUnit 5 extension.
 class CartServiceTest {
 
     @Mock UserRepository users;
@@ -59,7 +57,7 @@ class CartServiceTest {
                 .id(5L)
                 .user(user)
                 .lastChanged(OffsetDateTime.now())
-                .tickets(new ArrayList<>()) // Inicializace listu, aby nepadalo NPE
+                .tickets(new ArrayList<>())
                 .build();
 
         seat = Seat.builder()
@@ -74,20 +72,15 @@ class CartServiceTest {
 
     @Test
     void addItem_standing_success() {
-        // 1. Mockování uživatele
         when(users.findByEmailIgnoreCase("a@a.com")).thenReturn(Optional.of(user));
 
-        // 2. Mockování košíku
         when(carts.findByUserId(1L)).thenReturn(Optional.of(cart));
 
-        // 3. Mockování eventu (pro stání se používá zamykací metoda)
         when(events.findById(50L)).thenReturn(Optional.of(event));
         when(events.findByIdWithLock(50L)).thenReturn(Optional.of(event));
 
-        // 4. Mockování kapacity
         when(tickets.countByEventIdAndStatusIn(any(), any())).thenReturn(0L);
 
-        // 5. Mockování reloadu košíku
         when(carts.findById(5L)).thenReturn(Optional.of(cart));
 
         CartAddItemDto dto = CartAddItemDto.builder()
@@ -95,38 +88,31 @@ class CartServiceTest {
                 .quantity(1)
                 .build();
 
-        CartDto result = service.addItem("a@a.com", dto);
+        service.addItem("a@a.com", dto);
 
-        // U stání se nyní používá saveAll (batch)
         verify(tickets).saveAll(anyList());
     }
 
     @Test
     void standing_raceCondition_simulation() {
-        // 1. Specifické objekty pro tento test (aby se nepletla kapacita z setup)
         Venue smallVenue = Venue.builder().id(99L).standingCapacity(10).build();
         Event smallEvent = Event.builder().id(50L).venue(smallVenue).standingPrice(BigDecimal.ONE).build();
 
-        // 2. Mocking
         when(users.findByEmailIgnoreCase("a@a.com")).thenReturn(Optional.of(user));
         when(carts.findByUserId(1L)).thenReturn(Optional.of(cart));
         when(events.findById(50L)).thenReturn(Optional.of(smallEvent));
         when(events.findByIdWithLock(50L)).thenReturn(Optional.of(smallEvent));
 
-        // 3. Simulace: 6 lístků už je pryč (10 - 6 = 4 volné)
         when(tickets.countByEventIdAndStatusIn(any(), any())).thenReturn(6L);
 
-        // 4. Chceme 7 lístků -> Mělo by selhat
         CartAddItemDto dto = CartAddItemDto.builder()
                 .eventId(50L)
                 .quantity(7)
                 .build();
 
-        // 5. Assert Exception
         CapacityExceededException ex = assertThrows(CapacityExceededException.class, () ->
                 service.addItem("a@a.com", dto));
 
-        // OPRAVA: Kontrolujeme jen text, který tvá servisa skutečně vrací
         assertTrue(ex.getMessage().contains("Nedostatečná kapacita pro stání"),
                 "Chybná zpráva výjimky: " + ex.getMessage());
 
@@ -151,16 +137,13 @@ class CartServiceTest {
 
     @Test
     void addItem_seating_success() {
-        // Mockování
         when(users.findByEmailIgnoreCase("a@a.com")).thenReturn(Optional.of(user));
         when(carts.findByUserId(1L)).thenReturn(Optional.of(cart));
         when(events.findById(50L)).thenReturn(Optional.of(event));
 
-        // Mockujeme batch metody repository
         when(seats.findAllById(List.of(123L))).thenReturn(List.of(seat));
         when(tickets.findAllByEventIdAndSeatIdIn(eq(50L), any())).thenReturn(new ArrayList<>()); // Žádné existující tickety
 
-        // DTO nyní používá seatIds (List)
         CartAddItemDto dto = CartAddItemDto.builder()
                 .eventId(50L)
                 .seatIds(List.of(123L))
@@ -168,7 +151,6 @@ class CartServiceTest {
 
         service.addItem("a@a.com", dto);
 
-        // --- DŮLEŽITÉ: Ověřujeme saveAll, protože service používá batch ---
         verify(tickets).saveAll(anyList());
     }
 
@@ -180,14 +162,12 @@ class CartServiceTest {
 
         when(seats.findAllById(List.of(123L))).thenReturn(List.of(seat));
 
-        // Simulujeme, že lístek UŽ EXISTUJE (a není cancelled)
         Ticket existingTicket = Ticket.builder()
                 .seat(seat)
                 .event(event)
                 .status(TicketStatus.RESERVED)
                 .build();
 
-        // Service si nejdřív načte existující tickety
         when(tickets.findAllByEventIdAndSeatIdIn(eq(50L), any())).thenReturn(List.of(existingTicket));
 
         CartAddItemDto dto = CartAddItemDto.builder()
@@ -198,7 +178,6 @@ class CartServiceTest {
         assertThrows(SeatAlreadyTakenException.class, () ->
                 service.addItem("a@a.com", dto));
 
-        // Nemělo by dojít k uložení
         verify(tickets, never()).saveAll(anyList());
     }
 

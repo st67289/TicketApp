@@ -54,7 +54,7 @@ public class EmailService {
             mailSender.send(message);
             System.out.println("Email se vstupenkami odeslán na: " + to);
 
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             System.err.println("Chyba při odesílání emailu se vstupenkami: " + e.getMessage());
             e.printStackTrace();
         }

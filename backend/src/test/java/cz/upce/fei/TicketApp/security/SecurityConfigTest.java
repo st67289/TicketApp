@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SecurityConfigTest {
 
     /**
-     * jedinej integracni, zapina celej spring boot (pres application-test.properties)
+     * integracni, zapina celej spring boot (pres application-test.properties)
      * a kontroluje, jak jsou dostupny endpointy
      */
     @Autowired
