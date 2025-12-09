@@ -12,8 +12,19 @@ jobs:
       run:
         working-directory: backend
 
+    services:
+      redis:
+        image: redis:7.0
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup JDK 21
@@ -25,10 +36,10 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build and test backend
+      - name: Build, test and generate coverage
         run: ./gradlew clean test jacocoTestReport --no-daemon
 
-      - name: Upload coverage report
+      - name: Upload coverage HTML report
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-coverage-report
