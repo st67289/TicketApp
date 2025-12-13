@@ -36,7 +36,7 @@ Backendová logika je implementována v jazyce Java 21. Jako aplikační rámec 
 **Security**
 - **Spring Security** - Autentizace a autorizace
 - **JWT (jjwt)** - Stateless autentizace pomocí JSON Web Tokenů
-- **OAuth2 Client** - Podpora přihlášení přes externí poskytovatele (Google, GitHub)
+- **OAuth2 Client** - Podpora přihlášení přes externí poskytovatele (Google)
 
 **Dokumenty a Média**
 - **ZXing** - Generování QR kódů pro vstupenky
