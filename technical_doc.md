@@ -185,14 +185,14 @@ API je navrženo jako RESTful a komunikuje ve formátu JSON. Většina endpoint�
 ### 5.1 Přehled hlavních modulů
 Kontrolery jsou umístěny v balíčku `cz.upce.fei.TicketApp.controller`.
 
-| Modul | Base Path | Popis |
-|-------|-----------|-------|
-| **Auth** | `/api/auth` | Login, Registrace, Reset hesla, OAuth callback |
-| **Event** | `/api/events` | Veřejný výpis akcí, filtrování, detail akce |
-| **Cart** | `/api/cart` | Správa košíku (přidání/odebrání vstupenek) |
-| **Order** | `/api/orders` | Vytvoření objednávky, historie objednávek uživatele |
-| **Ticket**| `/api/tickets`| Stažení vstupenky (PDF), zobrazení QR kódu |
-| **Admin** | `/api/admin` | CRUD operace pro akce a místa konání, statistiky |
+| Modul      | Base Path      | Popis                                               |
+|------------|----------------|-----------------------------------------------------|
+| **Auth**   | `/api/auth`    | Login, Registrace, Reset hesla, OAuth callback      |
+| **Event**  | `/api/events`  | Veřejný výpis akcí, filtrování, detail akce         |
+| **Cart**   | `/api/cart`    | Správa košíku (přidání/odebrání vstupenek)          |
+| **Order**  | `/api/orders`  | Vytvoření objednávky, historie objednávek uživatele |
+| **Ticket** | `/api/tickets` | Stažení vstupenky (PDF), zobrazení QR kódu          |
+| **Admin**  | `/api/admin`   | CRUD operace pro akce a místa konání, statistiky    |
 
 ### 5.2 Validace a Ošetření chyb
 - **Validace:** Vstupy (DTO) jsou validovány pomocí anotací `@Valid`, `@NotNull`, `@Size` atd.
@@ -253,11 +253,11 @@ Projekt je připraven pro lokální vývoj s využitím Dockeru pro infrastruktu
 ### 8.2 Docker Compose Stack
 Soubor `compose.yaml` definuje infrastrukturu nutnou pro běh aplikace. Backend aplikace tyto služby očekává na definovaných portech.
 
-| Služba | Image | Porty (Host:Container) | Popis |
-|--------|-------|------------------------|-------|
-| **postgres** | `postgres:latest` | `5432:5432` | Hlavní databáze (`ticket_app`). Data jsou perzistentní ve volume `postgres_data`. |
-| **redis** | `redis:7-alpine` | `6379:6379` | In-memory databáze pro distribuované zámky (Redisson) a cache. |
-| **mailhog** | `mailhog/mailhog:latest` | `1025:1025` (SMTP)<br>`8025:8025` (Web UI) | Fake SMTP server pro zachytávání e-mailů. Backend se připojuje na port 1025. |
+| Služba       | Image                    | Porty (Host:Container)                     | Popis                                                                             |
+|--------------|--------------------------|--------------------------------------------|-----------------------------------------------------------------------------------|
+| **postgres** | `postgres:latest`        | `5432:5432`                                | Hlavní databáze (`ticket_app`). Data jsou perzistentní ve volume `postgres_data`. |
+| **redis**    | `redis:7-alpine`         | `6379:6379`                                | In-memory databáze pro distribuované zámky (Redisson) a cache.                    |
+| **mailhog**  | `mailhog/mailhog:latest` | `1025:1025` (SMTP)<br>`8025:8025` (Web UI) | Fake SMTP server pro zachytávání e-mailů. Backend se připojuje na port 1025.      |
 
 ### 8.3 Příprava a spuštění
 
@@ -305,7 +305,7 @@ npm run dev
 Po úspěšném spuštění jsou dostupné následující služby:
 
 | Služba      | URL / Port                                                                                 | Poznámka / Přihlašovací údaje (Dev) |
-| ----------- | ------------------------------------------------------------------------------------------ | ----------------------------------- |
+|-------------|--------------------------------------------------------------------------------------------|-------------------------------------|
 | Frontend    | [http://localhost:5173](http://localhost:5173)                                             | –                                   |
 | Backend API | [http://localhost:8080/api](http://localhost:8080/api)                                     | –                                   |
 | Swagger UI  | [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html) | Dokumentace endpointů               |
