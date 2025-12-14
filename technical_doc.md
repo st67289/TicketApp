@@ -28,7 +28,7 @@ Backendová logika je implementována v jazyce Java 21. Jako aplikační rámec 
 
 **Data & Storage**
 - **PostgreSQL** - Relační databáze (obraz `postgres:latest`)
-- **Redis 7** - In-memory databáze pro distribuované zámky a caching
+- **Redis 7** - In-memory úložiště využívané pro dočasné ukládání ověřovacích kódů (reset hesla, OAuth short-codes) a caching
 - **Spring Data JPA (Hibernate)** - ORM vrstva
 - **Flyway** - Verzování databázového schématu
 - **Redisson** - Redis klient pro Javu (správa distribuovaných zámků)
@@ -206,10 +206,11 @@ Kontrolery jsou umístěny v balíčku `cz.upce.fei.TicketApp.controller`.
 ## 6. Klíčové Funkcionality
 
 ### 6.1 Řešení Souběhu (Concurrency)
-Aplikace implementuje mechanismy proti **double-booking** (prodej stejného místa více uživatelům).
-- Při přidání místa do košíku (`CartService`) se provádí kontrola dostupnosti.
-- Pro kritické sekce (rezervace konkrétního sedadla) se využívají distribuované zámky (Redisson) nebo databázové zámky, aby se zajistila atomicita operace.
-- Testy `SeatingConcurrencyTest` a `StandingConcurrencyTest` ověřují, že systém správně zvládne nápor paralelních požadavků.
+Aplikace implementuje mechanismy proti **double-booking** (prodej stejného místa více uživatelům) přímo na databázové úrovni, což zajišťuje maximální konzistenci dat.
+
+* **Vstupenky na sezení (Seating):** Ochrana je zajištěna pomocí **unikátního databázového omezení (Unique Constraint)** na tabulce `tickets` nad sloupci `event_id` a `seat_id`. Pokud se dva uživatelé pokusí ve stejný okamžik rezervovat stejné sedadlo, databáze povolí pouze první `INSERT` a druhý skončí chybou `DataIntegrityViolationException`, kterou aplikace zachytí a vrátí uživateli chybovou hlášku (409 Conflict).
+* **Vstupenky na stání (Standing):** Protože zde neexistují konkrétní sedadla, ale pouze kapacita, využívá se **Pessimistic Locking** (`SELECT ... FOR UPDATE`). Při nákupu se řádek v tabulce `venues/events` uzamkne pro jedno vlákno, zkontroluje se kapacita, provede se odečet a až poté se zámek uvolní.
+* **Testy:** `SeatingConcurrencyTest` a `StandingConcurrencyTest` ověřují, že systém správně zvládne nápor paralelních požadavků (např. 10 vláken na jedno místo).
 
 ### 6.2 Generování Vstupenek (PDF & QR)
 - **QR Kódy:** Služba `QrCodeService` využívá knihovnu **ZXing** pro generování QR kódů obsahujících unikátní identifikátor vstupenky.
