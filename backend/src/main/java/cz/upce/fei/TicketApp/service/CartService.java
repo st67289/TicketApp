@@ -151,7 +151,15 @@ public class CartService {
     }
 
     private String genCode(Long eventId) {
-        return "E" + eventId + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String code;
+
+        do {
+            String randomPart = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+            code = "E" + eventId + "-" + randomPart;
+
+        } while (tickets.existsByTicketCode(code));
+
+        return code;
     }
 
     private Cart createCartFor(String email) {

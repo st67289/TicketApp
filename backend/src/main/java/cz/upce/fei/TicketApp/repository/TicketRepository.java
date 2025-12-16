@@ -31,11 +31,6 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     List<Ticket> findAllByEventIdAndStatusNot(Long eventId, TicketStatus status);
 
-    // Najde všechny vstupenky uživatele, které jsou v určitých stavech (např. ISSUED)
-    // Používáme EntityGraph pro efektivní načtení Eventu a Venue
-    @EntityGraph(attributePaths = {"event", "event.venue", "seat"})
-    List<Ticket> findAllByOrderAppUserEmailAndStatusIn(String email, Collection<TicketStatus> statuses);
-
     @EntityGraph(attributePaths = {"event", "event.venue", "seat"})
     Page<Ticket> findAllByOrderAppUserEmailAndStatusIn(String email, Collection<TicketStatus> statuses, Pageable pageable);
 
@@ -52,4 +47,6 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
         ORDER BY saleDate ASC
     """, nativeQuery = true)
     List<Object[]> getSalesStatsByEventId(Long eventId);
+
+    boolean existsByTicketCode(String ticketCode);
 }
