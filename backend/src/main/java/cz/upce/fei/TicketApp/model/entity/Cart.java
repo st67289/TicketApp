@@ -38,7 +38,7 @@ public class Cart {
     @Column(name = "last_changed", nullable = false)
     private OffsetDateTime lastChanged;
 
-    @OneToMany(mappedBy = "cart", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "cart", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude @EqualsAndHashCode.Exclude
     private List<Ticket> tickets;
 }

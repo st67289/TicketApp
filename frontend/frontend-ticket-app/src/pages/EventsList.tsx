@@ -126,8 +126,36 @@ export default function EventsList() {
 
             if (venueId) params.set("venueId", venueId);
 
-            if (dateFrom) params.set("from", `${dateFrom}T00:00:00Z`);
-            if (dateTo)   params.set("to",   `${dateTo}T23:59:59Z`);
+            // LOGIKA PRO DATUM OD (FROM)
+            // 1. Získáme dnešní půlnoc (lokální čas)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let effectiveFromDate = today;
+
+            // 2. Pokud uživatel vyplnil filtr
+            if (dateFrom) {
+                // Převedeme string "YYYY-MM-DD" na Date objekt (lokální půlnoc)
+                // Poznámka: new Date("YYYY-MM-DD") by bralo UTC, proto raději parsujeme ručně pro lokální čas
+                const [y, m, d] = dateFrom.split("-").map(Number);
+                const userDate = new Date(y, m - 1, d);
+                userDate.setHours(0, 0, 0, 0);
+
+                // 3. Podmínka: Použít uživatelovo datum jen pokud je dnes nebo později
+                // Pokud uživatel zadal minulost, effectiveFromDate zůstane 'today'
+                if (userDate >= today) {
+                    effectiveFromDate = userDate;
+                }
+            }
+
+            // Odeslání do API (pomocí helperu toIsoDayStart, který převede na ISO string)
+            params.set("from", toIsoDayStart(effectiveFromDate));
+
+
+            // LOGIKA PRO DATUM DO (TO)
+            if (dateTo) {
+                params.set("to", `${dateTo}T23:59:59Z`);
+            }
 
             if (priceMax) params.set("priceMax", priceMax);
             params.set("page", String(page - 1));
