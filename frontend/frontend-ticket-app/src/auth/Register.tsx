@@ -4,6 +4,14 @@ import styles from "./styles/Register.module.css";
 
 const BACKEND_URL = "http://localhost:8080";
 
+// Regex pro validaci hesla:
+// (?=.*[a-z]) = alespoň jedno malé písmeno
+// (?=.*[A-Z]) = alespoň jedno velké písmeno
+// (?=.*\d)    = alespoň jedno číslo
+// (?=.*[\W_]) = alespoň jeden speciální znak (např. !@#$...)
+// .{10,}      = délka alespoň 10 znaků
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{10,}$/;
+
 export default function Register() {
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,10 +32,19 @@ export default function Register() {
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+
+        // 1. Kontrola shody hesel
         if (form.password !== form.confirmPassword) {
             setError("Hesla se neshodují.");
             return;
         }
+
+        // 2. Kontrola komplexnosti hesla (NOVÉ)
+        if (!PASSWORD_REGEX.test(form.password)) {
+            setError("Heslo musí mít alespoň 10 znaků, obsahovat velké i malé písmeno, číslo a speciální znak.");
+            return;
+        }
+
         try {
             setIsSubmitting(true);
             const res = await fetch(`${BACKEND_URL}/api/auth/register`, {
@@ -35,8 +52,11 @@ export default function Register() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(form),
             });
+
+            // Čtení chybové zprávy ze serveru (pokud existuje)
             if (!res.ok) {
-                setError("Chyba při registraci. Zkuste to prosím znovu.");
+                const data = await res.json().catch(() => null);
+                setError(data?.message || "Chyba při registraci. Zkuste to prosím znovu.");
                 return;
             }
             navigate("/auth/login");
@@ -70,15 +90,14 @@ export default function Register() {
                 </Link>
 
                 <header className={styles.header}>
-          <span className={styles.logo} aria-hidden="true">
-            {/*SVG*/}
-              <svg viewBox="0 0 64 64" className={styles.logoIcon} role="img" aria-label="Ticket icon">
-              <path d="M8 20a4 4 0 0 1 4-4h22a4 4 0 0 0 4-4h6a4 4 0 0 1 4 4v8a4 4 0 0 0 0 8v8a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V20z" />
-              <circle cx="28" cy="22" r="2" />
-              <circle cx="34" cy="22" r="2" />
-              <circle cx="40" cy="22" r="2" />
-            </svg>
-          </span>
+                  <span className={styles.logo} aria-hidden="true">
+                      <svg viewBox="0 0 64 64" className={styles.logoIcon} role="img" aria-label="Ticket icon">
+                      <path d="M8 20a4 4 0 0 1 4-4h22a4 4 0 0 0 4-4h6a4 4 0 0 1 4 4v8a4 4 0 0 0 0 8v8a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V20z" />
+                      <circle cx="28" cy="22" r="2" />
+                      <circle cx="34" cy="22" r="2" />
+                      <circle cx="40" cy="22" r="2" />
+                    </svg>
+                  </span>
                     <h1 className={styles.title}>TicketPortal</h1>
                     <p className={styles.subtitle}>Vytvoř si účet a ulov nejlepší místa.</p>
                 </header>
@@ -149,13 +168,16 @@ export default function Register() {
                             className={styles.input}
                             name="password"
                             type="password"
-                            placeholder="••••••••"
+                            placeholder="••••••••••"
                             value={form.password}
                             onChange={handleChange}
                             required
                             autoComplete="new-password"
-                            minLength={6}
+                            minLength={10} // Změněno z 6 na 10 pro UX nápovědu prohlížeče
                         />
+                        <span style={{ fontSize: "11px", color: "#666", marginTop: "4px" }}>
+                            Min. 10 znaků, velké/malé písmeno, číslo, symbol.
+                        </span>
                     </label>
 
                     <label className={styles.field}>
@@ -164,12 +186,12 @@ export default function Register() {
                             className={styles.input}
                             name="confirmPassword"
                             type="password"
-                            placeholder="••••••••"
+                            placeholder="••••••••••"
                             value={form.confirmPassword}
                             onChange={handleChange}
                             required
                             autoComplete="new-password"
-                            minLength={6}
+                            minLength={10}
                         />
                     </label>
 
