@@ -9,4 +9,4 @@ zprovoznění:
 pro to aby fungovaly testy musí existovat user:
 
 email: test@user.com
-heslo: admin123
+heslo: Admin123++

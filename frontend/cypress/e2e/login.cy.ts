@@ -12,7 +12,7 @@ describe('Testování přihlášení', () => {
 
     cy.get('input[type="password"]')
       .should('be.visible')
-      .type('admin123');
+      .type('Admin123++');
 
     cy.get('button[type="submit"]')
       .click();
