@@ -29,7 +29,7 @@ describe('Filtry událostí', () => {
       .find('select')
       .find('option')
       .should('have.length.greaterThan', 1)
-      .eq(1) // první skutečná venue (index 0 bývá "Vše")
+      .eq(1) 
       .then(option => {
         cy.contains('label', 'Místo konání')
           .parent()
@@ -90,8 +90,6 @@ describe('Filtry událostí', () => {
       .next()
       .select('Cena ↑');
 
-    // Správně by zde mělo následovat ověření pořadí prvků v DOM
-    // (např. porovnání hodnot cen)
   });
 
   it('Reset filtrů (bez falešných pádů)', () => {
@@ -114,7 +112,6 @@ describe('Filtry událostí', () => {
       expect(request.url).not.to.include('to=');
       expect(request.url).not.to.include('q=');
 
-      // `from=` je defaultní parametr → musí zůstat
       expect(request.url).to.include('from=');
     });
   });
