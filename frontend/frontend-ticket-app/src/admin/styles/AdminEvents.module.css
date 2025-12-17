@@ -214,6 +214,11 @@
     color-scheme: dark; /* Pro kalendář na tmavém pozadí */
 }
 
+.formInput option {
+    background: #000;
+    color: #fff;
+}
+
 .formTextarea {
     appearance: none;
     width: 100%;
